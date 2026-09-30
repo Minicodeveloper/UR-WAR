@@ -30,7 +30,7 @@
 
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/TU-USUARIO/UR-WAR.git
+   git clone https://github.com/Minicodeveloper/UR-WAR.git
    cd "UR WAR"
    ```
 

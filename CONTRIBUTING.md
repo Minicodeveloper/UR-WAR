@@ -9,7 +9,7 @@
 1. **Haz un Fork del repositorio** en GitHub.
 2. **Clona tu fork** localmente:
    ```bash
-   git clone https://github.com/TU-USUARIO/UR-WAR.git
+   git clone https://github.com/Minicodeveloper/UR-WAR.git
    cd "UR WAR"
    ```
 3. **Instala las dependencias**:
