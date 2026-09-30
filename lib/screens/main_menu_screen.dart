@@ -11,6 +11,15 @@ class MainMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // --- ELEMENTO DE DIAGNÓSTICO VISUAL TEMPORAL ---
+      appBar: AppBar(
+        backgroundColor: Colors.green.shade800,
+        title: const Text(
+          'Rama feature/diagnostico-interfaz activa',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
