@@ -15,7 +15,7 @@ class MainMenuScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.green.shade800,
         title: const Text(
-          'Rama feature/diagnostico-interfaz activa',
+          'Rama feature/diagnostico-interfaz aprobada',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
