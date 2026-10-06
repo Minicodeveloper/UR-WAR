@@ -317,6 +317,8 @@ class BattlefieldPainter extends CustomPainter {
   }
 
   void _paintOffscreenEnemyRadar(Canvas canvas, Size size) {
+    if (size.width <= 50.0 || size.height <= 50.0) return;
+
     final viewportRect = Rect.fromLTWH(
       engine.cameraOffset.dx,
       engine.cameraOffset.dy,
@@ -338,10 +340,15 @@ class BattlefieldPainter extends CustomPainter {
       final angle = atan2(diff.dy, diff.dx);
 
       const margin = 24.0;
+      final minX = margin;
+      final maxX = max(minX, size.width - margin);
+      final minY = margin;
+      final maxY = max(minY, size.height - margin);
+
       final edgeX = (centerScreen.dx + cos(angle) * (size.width / 2 - margin))
-          .clamp(margin, size.width - margin);
+          .clamp(minX, maxX);
       final edgeY = (centerScreen.dy + sin(angle) * (size.height / 2 - margin))
-          .clamp(margin, size.height - margin);
+          .clamp(minY, maxY);
 
       final point = Offset(edgeX, edgeY);
 
