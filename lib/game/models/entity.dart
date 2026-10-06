@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../core/audio_engine.dart';
 import 'player_class.dart';
 import 'enemy_type.dart';
 
@@ -54,10 +55,11 @@ class PlayerEntity {
       skillPoints++;
       xpToNextLevel = (xpToNextLevel * 1.5).round();
 
-      // Bonificación al subir de nivel
       maxHealth += 25;
       health = min(maxHealth, health + maxHealth * 0.5);
       damageMultiplier += 0.10;
+
+      AudioEngine.playLevelUp();
     }
   }
 

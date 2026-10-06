@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../core/audio_engine.dart';
+import '../../core/save_system.dart';
 import '../models/enemy_type.dart';
 import '../models/entity.dart';
 import '../models/game_map.dart';
@@ -196,6 +198,13 @@ class GameEngine extends ChangeNotifier {
         enemies.isEmpty) {
       if (waveSystem.currentWave >= map.totalWaves) {
         isVictory = true;
+        AudioEngine.playVictory();
+        SaveSystem.addMatchStats(
+          kills: player.kills,
+          gold: player.gold,
+          score: player.score,
+        );
+        SaveSystem.unlockLevel(map.levelIndex + 1);
         showAnnouncement('¡VICTORIA! ¡TODAS LAS HORDAS Y CAMPAMENTOS HAN SIDO DESTRUIDOS!', 10.0);
         notifyListeners();
         return;
@@ -227,6 +236,12 @@ class GameEngine extends ChangeNotifier {
     // Verificar condiciones de derrota
     if (player.health <= 0 || townHall.health <= 0) {
       isGameOver = true;
+      AudioEngine.playDefeat();
+      SaveSystem.addMatchStats(
+        kills: player.kills,
+        gold: player.gold,
+        score: player.score,
+      );
       showAnnouncement('¡DERROTA! LA ALDEA HA CAÍDO...', 10.0);
     }
 
@@ -315,6 +330,12 @@ class GameEngine extends ChangeNotifier {
 
     player.attackTimer = playerClass.attackCooldownSeconds * cooldownBonus;
     player.attackAnimTimer = 0.25;
+
+    if (playerClass.isMelee) {
+      AudioEngine.playAttackSlash();
+    } else {
+      AudioEngine.playShoot();
+    }
 
     final attackDir = player.facingLeft ? const Offset(-1, 0) : const Offset(1, 0);
 

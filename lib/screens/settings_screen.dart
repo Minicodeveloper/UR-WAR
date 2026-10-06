@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/save_system.dart';
 import '../core/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -9,72 +10,92 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEnabled = true;
-  bool _musicEnabled = true;
-  bool _vibrationEnabled = true;
-  double _difficulty = 1.0;
+  late bool _soundEnabled;
+  late bool _musicEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundEnabled = SaveSystem.data.soundEnabled;
+    _musicEnabled = SaveSystem.data.musicEnabled;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final saveData = SaveSystem.data;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AJUSTES'),
+        title: const Text('AJUSTES & PERFIL'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24.0),
         children: [
+          _buildSectionHeader('ESTADÍSTICAS Y RÉCORDS'),
+          Card(
+            color: AppTheme.surfaceColor,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildStatTile(Icons.emoji_events_rounded, 'Récord de Puntuación', '${saveData.highScore} PTS', const Color(0xFFFFD166)),
+                  const Divider(color: Colors.white10),
+                  _buildStatTile(Icons.shield_rounded, 'Enemigos Eliminados', '${saveData.totalKills}', const Color(0xFFEF233C)),
+                  const Divider(color: Colors.white10),
+                  _buildStatTile(Icons.monetization_on_rounded, 'Oro Acumulado', '${saveData.totalGoldGathered} 🪙', const Color(0xFFFFB703)),
+                  const Divider(color: Colors.white10),
+                  _buildStatTile(Icons.flag_rounded, 'Nivel de Campaña Unlocked', 'Nivel ${saveData.unlockedCampaignLevel}', const Color(0xFF55A630)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
           _buildSectionHeader('AUDIO & EFECTOS'),
           SwitchListTile(
-            title: const Text('Efectos de Sonido'),
-            subtitle: const Text('Sonidos de disparos y explosiones'),
+            title: const Text('Efectos de Sonido Sintéticos'),
+            subtitle: const Text('Efectos retro 8-bit para combates y tiendas'),
             value: _soundEnabled,
             activeThumbColor: AppTheme.primaryColor,
-            onChanged: (val) => setState(() => _soundEnabled = val),
+            onChanged: (val) {
+              setState(() => _soundEnabled = val);
+              SaveSystem.setSoundEnabled(val);
+            },
           ),
           SwitchListTile(
             title: const Text('Música de Fondo'),
-            subtitle: const Text('Banda sonora en menú y batalla'),
+            subtitle: const Text('Banda sonora en menú y mapa'),
             value: _musicEnabled,
             activeThumbColor: AppTheme.primaryColor,
-            onChanged: (val) => setState(() => _musicEnabled = val),
-          ),
-          SwitchListTile(
-            title: const Text('Vibración / Háptico'),
-            subtitle: const Text('Feedback táctil en dispositivos móviles'),
-            value: _vibrationEnabled,
-            activeThumbColor: AppTheme.primaryColor,
-            onChanged: (val) => setState(() => _vibrationEnabled = val),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('JUGABILIDAD'),
-          ListTile(
-            title: const Text('Nivel de Dificultad'),
-            subtitle: Slider(
-              value: _difficulty,
-              min: 1.0,
-              max: 3.0,
-              divisions: 2,
-              activeColor: AppTheme.primaryColor,
-              label: _getDifficultyLabel(_difficulty),
-              onChanged: (val) => setState(() => _difficulty = val),
-            ),
-            trailing: Text(
-              _getDifficultyLabel(_difficulty),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.accentColor,
-              ),
-            ),
+            onChanged: (val) {
+              setState(() => _musicEnabled = val);
+              SaveSystem.setMusicEnabled(val);
+            },
           ),
         ],
       ),
     );
   }
 
-  String _getDifficultyLabel(double value) {
-    if (value <= 1.0) return 'Fácil';
-    if (value <= 2.0) return 'Normal';
-    return 'Difícil';
+  Widget _buildStatTile(IconData icon, String title, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 10),
+              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            ],
+          ),
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSectionHeader(String title) {
