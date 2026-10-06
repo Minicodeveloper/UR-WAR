@@ -2,9 +2,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/audio_engine.dart';
 import '../../core/save_system.dart';
+import '../graphics/pixel_art_data.dart';
 import '../models/enemy_type.dart';
 import '../models/entity.dart';
 import '../models/game_map.dart';
+import '../models/npc_model.dart';
 import '../models/player_class.dart';
 import '../models/wave_system.dart';
 
@@ -17,6 +19,8 @@ class GameEngine extends ChangeNotifier {
   final List<VillageBuildingEntity> villageBuildings = [];
   final List<EnemyEntity> enemies = [];
   final List<RivalCampEntity> rivalCamps = [];
+  final List<NpcEntity> npcs = [];
+  NpcEntity? activeDialogueNpc;
   final List<ProjectileEntity> projectiles = [];
   final List<FloatingTextEntity> floatingTexts = [];
   final List<ParticleEntity> particles = [];
@@ -109,6 +113,48 @@ class GameEngine extends ChangeNotifier {
       radius: 35,
     ));
 
+    // Inicializar NPCs de la Aldea Isekai
+    npcs.add(NpcEntity(
+      id: 'npc_blacksmith',
+      name: 'Gromm el Herrero',
+      title: 'Maestro Forjador',
+      role: NpcRoleType.blacksmith,
+      position: Offset(centerX - 90, centerY + 90),
+      dialogue: '¡Saludos, guerrero! Puedo forjar mejores armaduras para tus defensas a cambio de 100 de Oro.',
+      sprite: PixelArtLibrary.npcBlacksmith,
+      themeColor: const Color(0xFFFF8C00),
+    ));
+
+    npcs.add(NpcEntity(
+      id: 'npc_merchant',
+      name: 'Kaelen el Mercader',
+      title: 'Comerciante Isekai',
+      role: NpcRoleType.merchant,
+      position: Offset(centerX + 90, centerY + 90),
+      dialogue: '¡Mercancías raras traídas de tierras lejanas! Compra elixires de salud instantáneos.',
+      sprite: PixelArtLibrary.npcMerchant,
+      themeColor: const Color(0xFF2A9D8F),
+    ));
+
+    npcs.add(NpcEntity(
+      id: 'npc_questgiver',
+      name: 'Anciano Eldrin',
+      title: 'Líder del Gremio',
+      role: NpcRoleType.questGiver,
+      position: Offset(centerX, centerY - 100),
+      dialogue: 'Nuestra aldea está bajo asedio constante. ¡Elimina a 10 enemigos de las hordas invasoras y te recompensaré con oro y gran experiencia!',
+      sprite: PixelArtLibrary.npcQuestGiver,
+      themeColor: const Color(0xFFFFD166),
+      activeQuest: NpcQuest(
+        id: 'quest_cleanse_horde',
+        title: 'Purga de las Hordas Invasoras',
+        description: 'Elimina 10 enemigos que intenten destruir el Corazón de la Aldea.',
+        requiredEnemyKills: 10,
+        goldReward: 250,
+        xpReward: 300,
+      ),
+    ));
+
     // Inicializar campamentos enemigos rivales en el mapa
     for (int i = 0; i < map.rivalCamps.length; i++) {
       final config = map.rivalCamps[i];
@@ -125,6 +171,34 @@ class GameEngine extends ChangeNotifier {
     // Inicializar sistema de oleadas
     waveSystem = WaveSystem(maxWaves: map.totalWaves);
     showAnnouncement('¡DEFENDE LA ALDEA! OLEADA 1 ENTRANTE', 3.5);
+  }
+
+  void interactWithNearbyNpc() {
+    for (final npc in npcs) {
+      final dist = (npc.position - player.position).distance;
+      if (dist <= 75.0) {
+        activeDialogueNpc = npc;
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
+  void closeNpcDialogue() {
+    activeDialogueNpc = null;
+    notifyListeners();
+  }
+
+  void claimActiveQuest(NpcEntity npc) {
+    final quest = npc.activeQuest;
+    if (quest != null && quest.isCompleted && !quest.isClaimed) {
+      quest.isClaimed = true;
+      player.gold += quest.goldReward;
+      player.addXp(quest.xpReward);
+      AudioEngine.playCoin();
+      showAnnouncement('¡Misión Completada: ${quest.title}! +${quest.goldReward} Oro, +${quest.xpReward} XP');
+      notifyListeners();
+    }
   }
 
   void setViewportSize(Size size) {
@@ -812,7 +886,7 @@ class GameEngine extends ChangeNotifier {
       player.gold += enemy.config.goldReward;
       player.score += enemy.config.scoreReward;
       player.kills++;
-      player.addXp(enemy.config.scoreReward);
+      player.addXp(enemy.config.xpReward);
 
       // Pasiva del Mago Arcano: Sifón de Maná (recupera vida al matar)
       if (playerClass.type == PlayerRoleType.mage &&
@@ -826,6 +900,19 @@ class GameEngine extends ChangeNotifier {
         color: const Color(0xFFFFD166),
         fontSize: 13,
       ));
+
+      // Actualizar progreso de misiones activas de NPCs
+      for (final npc in npcs) {
+        final q = npc.activeQuest;
+        if (q != null && !q.isCompleted) {
+          q.currentKills++;
+          if (q.currentKills >= q.requiredEnemyKills) {
+            q.isCompleted = true;
+            showAnnouncement('¡MISIÓN LISTA PARA RECLAMAR EN EL GREMIO: ${q.title}!');
+            AudioEngine.playLevelUp();
+          }
+        }
+      }
 
       _spawnDeathParticles(enemy.position);
     }

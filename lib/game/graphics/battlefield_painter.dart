@@ -35,6 +35,9 @@ class BattlefieldPainter extends CustomPainter {
     // 5. DIBUJAR EDIFICIOS DE LA ALDEA Y CONSTRUCCIONES
     _paintVillageBuildings(canvas);
 
+    // 5.5 DIBUJAR NPCS ISEKAI
+    _paintNpcs(canvas);
+
     // 6. DIBUJAR ENEMIGOS
     _paintEnemies(canvas);
 
@@ -143,30 +146,68 @@ class BattlefieldPainter extends CustomPainter {
     for (final camp in engine.rivalCamps) {
       if (camp.isDestroyed) continue;
 
-      // Base del campamento rival
-      final basePaint = Paint()..color = const Color(0xFF6A040F);
-      canvas.drawCircle(camp.position, camp.radius, basePaint);
+      // 1. Plaza central y foso del bastión rival
+      final moatPaint = Paint()..color = const Color(0xFF370617);
+      canvas.drawCircle(camp.position, camp.radius + 20, moatPaint);
 
-      // Icono de fortaleza enemiga
+      final plazaPaint = Paint()..color = const Color(0xFF6A040F);
+      canvas.drawCircle(camp.position, camp.radius + 8, plazaPaint);
+
+      // 2. Empalizada / Muralla de estacas protectoras alrededor del pueblo rival
+      final wallPaint = Paint()
+        ..color = const Color(0xFF9D0208)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6.0;
+      canvas.drawCircle(camp.position, camp.radius + 10, wallPaint);
+
+      // 3. Estacas defensivas en el perímetro del pueblo rival (4 esquinas)
+      final stakePaint = Paint()..color = const Color(0xFFD00000);
+      for (int i = 0; i < 6; i++) {
+        final angle = (i * 60) * pi / 180;
+        final stakePos = camp.position + Offset(cos(angle), sin(angle)) * (camp.radius + 12);
+        canvas.drawCircle(stakePos, 4, stakePaint);
+      }
+
+      // 4. Edificios secundaio / Chozas del poblado rival (flancos)
+      _drawPixelSprite(
+        canvas,
+        PixelArtLibrary.knightIdle,
+        camp.position + const Offset(-45, -20),
+        pixelSize: 1.6,
+      );
       _drawPixelSprite(
         canvas,
         PixelArtLibrary.orc,
-        camp.position - const Offset(27, 27),
-        pixelSize: 3.0,
+        camp.position + const Offset(25, -25),
+        pixelSize: 1.6,
+      );
+      _drawPixelSprite(
+        canvas,
+        PixelArtLibrary.skeleton,
+        camp.position + const Offset(-20, 25),
+        pixelSize: 1.6,
+      );
+
+      // 5. Fortificación Central del Bastión (Gran Trono / Bastión Principal)
+      _drawPixelSprite(
+        canvas,
+        PixelArtLibrary.bossTitan,
+        camp.position - const Offset(32, 36),
+        pixelSize: 2.2,
         tintColor: camp.hitFlashTimer > 0 ? Colors.redAccent : null,
         tintIntensity: camp.hitFlashTimer > 0 ? 0.8 : 0.0,
       );
 
-      // Barra de vida del campamento
+      // 6. Barra de Vida y Título de la Ciudadela Rival
       _paintHealthBar(
         canvas,
-        center: Offset(camp.position.dx, camp.position.dy - camp.radius - 12),
-        width: 80,
-        height: 7,
+        center: Offset(camp.position.dx, camp.position.dy - camp.radius - 22),
+        width: 100,
+        height: 8,
         current: camp.health,
         max: camp.maxHealth,
         barColor: const Color(0xFFD00000),
-        label: camp.name,
+        label: '🏰 BASTIÓN FORTIFICADO: ${camp.name.toUpperCase()}',
       );
     }
   }
@@ -359,8 +400,14 @@ class BattlefieldPainter extends CustomPainter {
   void _paintFogOfWar(Canvas canvas, GameMapModel map) {
     final fogPaint = Paint()..color = Colors.black.withValues(alpha: 0.70);
 
-    for (int r = 0; r < engine.fogRows; r++) {
-      for (int c = 0; c < engine.fogCols; c++) {
+    // Culling para móviles: solo iterar celdas visibles dentro del viewport
+    final minCol = (engine.cameraOffset.dx / GameEngine.fogTileSize).floor().clamp(0, engine.fogCols - 1);
+    final maxCol = ((engine.cameraOffset.dx + engine.viewportSize.width) / GameEngine.fogTileSize).ceil().clamp(0, engine.fogCols - 1);
+    final minRow = (engine.cameraOffset.dy / GameEngine.fogTileSize).floor().clamp(0, engine.fogRows - 1);
+    final maxRow = ((engine.cameraOffset.dy + engine.viewportSize.height) / GameEngine.fogTileSize).ceil().clamp(0, engine.fogRows - 1);
+
+    for (int r = minRow; r <= maxRow; r++) {
+      for (int c = minCol; c <= maxCol; c++) {
         if (!engine.fogExplored[r][c]) {
           canvas.drawRect(
             Rect.fromLTWH(
@@ -373,6 +420,72 @@ class BattlefieldPainter extends CustomPainter {
           );
         }
       }
+    }
+  }
+
+  void _paintNpcs(Canvas canvas) {
+    for (final npc in engine.npcs) {
+      canvas.save();
+      canvas.translate(npc.position.dx, npc.position.dy);
+
+      // Sombra del NPC
+      final shadowPaint = Paint()..color = Colors.black38;
+      canvas.drawOval(
+        Rect.fromCenter(center: const Offset(0, 18), width: 32, height: 12),
+        shadowPaint,
+      );
+
+      // Sprite Pixel Art del NPC
+      _drawPixelSprite(
+        canvas,
+        npc.sprite,
+        const Offset(-16, -16),
+        pixelSize: 2.2,
+      );
+
+      // Indicador flotante sobre la cabeza (Misión o Interacción '!')
+      final hasQuest = npc.activeQuest != null;
+      final isCompleted = npc.activeQuest?.isCompleted ?? false;
+      final iconColor = isCompleted ? const Color(0xFF55A630) : npc.themeColor;
+
+      final badgeBg = Paint()..color = const Color(0xFF141419);
+      canvas.drawCircle(const Offset(0, -28), 10, badgeBg);
+
+      final badgeBorder = Paint()
+        ..color = iconColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+      canvas.drawCircle(const Offset(0, -28), 10, badgeBorder);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: hasQuest ? (isCompleted ? '?' : '!') : '💬',
+          style: TextStyle(
+            color: iconColor,
+            fontWeight: FontWeight.w900,
+            fontSize: hasQuest ? 13 : 10,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(canvas, Offset(-textPainter.width / 2, -28 - textPainter.height / 2));
+
+      // Nombre y Rol del NPC
+      final namePainter = TextPainter(
+        text: TextSpan(
+          text: npc.name,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      namePainter.paint(canvas, Offset(-namePainter.width / 2, 22));
+
+      canvas.restore();
     }
   }
 

@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ur_war/game/logic/game_engine.dart';
 import 'package:ur_war/game/models/game_map.dart';
 import 'package:ur_war/game/models/player_class.dart';
 import 'package:ur_war/game/models/entity.dart';
+import 'package:ur_war/game/widgets/game_hud.dart';
+import 'package:ur_war/game/widgets/virtual_joystick.dart';
 import 'package:ur_war/providers/game_state.dart';
 
 void main() {
@@ -85,6 +88,106 @@ void main() {
       // End turn
       gameState.endTurn();
       expect(gameState.currentTurn, 2);
+    });
+  });
+
+  group('Mobile Touch Controls & Responsive HUD Tests', () {
+    testWidgets('VirtualJoystick renders and sends directional input on touch drag', (tester) async {
+      Offset receivedDirection = Offset.zero;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 300,
+              height: 400,
+              child: VirtualJoystick(
+                radius: 50,
+                onDirectionChanged: (dir) => receivedDirection = dir,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Verify that the joystick is visible
+      expect(find.byType(VirtualJoystick), findsOneWidget);
+      expect(find.text('JOYSTICK'), findsOneWidget);
+
+      // Simulate a drag gesture upwards
+      final joystickCenter = tester.getCenter(find.byType(VirtualJoystick));
+      final gesture = await tester.startGesture(joystickCenter);
+      await gesture.moveBy(const Offset(0, -30));
+      await tester.pump();
+
+      expect(receivedDirection.dy, lessThan(0.0));
+
+      // End gesture and verify reset to zero
+      await gesture.up();
+      await tester.pump();
+      expect(receivedDirection, Offset.zero);
+    });
+
+    testWidgets('GameHUD renders cleanly without overflows on small mobile screen (360x640)', (tester) async {
+      final map = GameMapModel.availableMaps.first;
+      final pClass = PlayerClass.availableClasses.first;
+      final engine = GameEngine(map: map, playerClass: pClass);
+
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GameHUD(
+              engine: engine,
+              onJoystickDirection: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(GameHUD), findsOneWidget);
+      expect(find.byType(VirtualJoystick), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('GameHUD renders cleanly on compact 320x480 and mobile landscape 800x380', (tester) async {
+      final map = GameMapModel.availableMaps.first;
+      final pClass = PlayerClass.availableClasses.first;
+      final engine = GameEngine(map: map, playerClass: pClass);
+
+      // Test Compact 320x480
+      tester.view.physicalSize = const Size(320, 480);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GameHUD(
+              engine: engine,
+              onJoystickDirection: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+
+      // Test Landscape 800x380
+      tester.view.physicalSize = const Size(800, 380);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GameHUD(
+              engine: engine,
+              onJoystickDirection: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

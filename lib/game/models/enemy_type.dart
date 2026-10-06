@@ -19,6 +19,7 @@ class EnemyConfig {
   final double attackCooldownSeconds;
   final int goldReward;
   final int scoreReward;
+  final int xpReward;
   final bool isRanged;
   final bool isBoss;
   final double hitRadius;
@@ -35,6 +36,7 @@ class EnemyConfig {
     required this.attackCooldownSeconds,
     required this.goldReward,
     required this.scoreReward,
+    required this.xpReward,
     required this.isRanged,
     required this.isBoss,
     required this.hitRadius,
@@ -52,6 +54,7 @@ class EnemyConfig {
         attackCooldownSeconds: 0.8,
         goldReward: 15,
         scoreReward: 30,
+        xpReward: 15,
         isRanged: false,
         isBoss: false,
         hitRadius: 20,
@@ -68,6 +71,7 @@ class EnemyConfig {
         attackCooldownSeconds: 1.2,
         goldReward: 35,
         scoreReward: 70,
+        xpReward: 25,
         isRanged: false,
         isBoss: false,
         hitRadius: 28,
@@ -84,6 +88,7 @@ class EnemyConfig {
         attackCooldownSeconds: 1.5,
         goldReward: 25,
         scoreReward: 50,
+        xpReward: 20,
         isRanged: true,
         isBoss: false,
         hitRadius: 22,
@@ -100,6 +105,7 @@ class EnemyConfig {
         attackCooldownSeconds: 1.8,
         goldReward: 45,
         scoreReward: 90,
+        xpReward: 35,
         isRanged: true,
         isBoss: false,
         hitRadius: 24,
@@ -116,6 +122,7 @@ class EnemyConfig {
         attackCooldownSeconds: 1.5,
         goldReward: 200,
         scoreReward: 500,
+        xpReward: 120,
         isRanged: false,
         isBoss: true,
         hitRadius: 45,

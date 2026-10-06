@@ -24,84 +24,107 @@ class GameHUD extends StatelessWidget {
         final townHall = engine.townHall;
         final wave = engine.waveSystem;
 
-        return Stack(
-          children: [
-            // ==========================================
-            // BARRA SUPERIOR DE ESTADO Y NIVEL RPG
-            // ==========================================
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Retrato, Nivel y XP del Héroe
-                        _buildHeroStatus(player),
-                        const SizedBox(width: 12),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isPortrait = constraints.maxHeight > constraints.maxWidth;
+            final isSmallScreen = constraints.maxWidth < 600;
 
-                        // Barra del Corazón de la Aldea
-                        Expanded(child: _buildVillageStatus(townHall)),
-                        const SizedBox(width: 12),
+            return Stack(
+              children: [
+                // ==========================================
+                // 1. BARRA SUPERIOR DE ESTADO Y NIVEL RPG
+                // ==========================================
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isSmallScreen && isPortrait)
+                            // En Portrait pequeño, apilar héroe/oleada arriba y corazón abajo
+                            Column(
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildHeroStatus(player),
+                                      const SizedBox(width: 8),
+                                      _buildWaveAndGold(wave, player, context),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                _buildVillageStatus(townHall),
+                              ],
+                            )
+                          else
+                            // En Landscape o pantalla ancha, mostrarlo en una fila flexible
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.topLeft,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Retrato, Nivel y XP del Héroe
+                                  _buildHeroStatus(player),
+                                  const SizedBox(width: 8),
 
-                        // Info de Oleada y Recursos
-                        _buildWaveAndGold(wave, player, context),
-                      ],
+                                  // Barra del Corazón de la Aldea
+                                  SizedBox(
+                                    width: 320,
+                                    child: _buildVillageStatus(townHall),
+                                  ),
+                                  const SizedBox(width: 8),
+
+                                  // Info de Oleada y Recursos
+                                  _buildWaveAndGold(wave, player, context),
+                                ],
+                              ),
+                            ),
+
+                          // Banner de Anuncio en pantalla si está activo
+                          if (engine.announcementBanner != null) ...[
+                            const SizedBox(height: 8),
+                            _buildAnnouncementBanner(engine.announcementBanner!),
+                          ],
+                        ],
+                      ),
                     ),
-
-                    // Banner de Anuncio en pantalla si está activo
-                    if (engine.announcementBanner != null) ...[
-                      const SizedBox(height: 12),
-                      _buildAnnouncementBanner(engine.announcementBanner!),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            // ==========================================
-            // CONTROLES INFERIORES: JOYSTICK A LA IZQUIERDA
-            // ==========================================
-            Positioned(
-              left: 20,
-              bottom: 24,
-              child: SafeArea(
-                child: VirtualJoystick(
-                  radius: 60,
-                  onDirectionChanged: onJoystickDirection,
+                // ==========================================
+                // 2. CONTROLES TÁCTILES: ZONA DINÁMICA DEL JOYSTICK A LA IZQUIERDA
+                // ==========================================
+                Positioned(
+                  left: 0,
+                  top: isPortrait ? 130 : 75,
+                  bottom: 0,
+                  width: isPortrait ? constraints.maxWidth * 0.55 : constraints.maxWidth * 0.50,
+                  child: VirtualJoystick(
+                    radius: isSmallScreen ? 48 : 55,
+                    onDirectionChanged: onJoystickDirection,
+                  ),
                 ),
-              ),
-            ),
 
-            // ==========================================
-            // BOTONES DE ACCIÓN A LA DERECHA
-            // ==========================================
-            Positioned(
-              right: 20,
-              bottom: 20,
-              child: SafeArea(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Botón de Tienda de la Aldea y Construcción
-                    _buildShopButton(context, player),
-                    const SizedBox(width: 12),
+                // ==========================================
+                // 3. BOTONES DE ACCIÓN A LA DERECHA (ARCADE CLUSTER)
+                // ==========================================
+                _buildActionButtonsCluster(context, player, isPortrait),
 
-                    // Botón Habilidad Definitiva (Ultimate) si está desbloqueada
-                    _buildUltimateSkillButton(player),
-
-                    // Botón de Habilidad Especial
-                    _buildSkillButton(player),
-                    const SizedBox(width: 12),
-
-                    // Botón de Ataque Primario
-                    _buildAttackButton(player),
-                  ],
-                ),
-              ),
-            ),
-          ],
+                // Modal de Diálogo con NPC si está activo
+                if (engine.activeDialogueNpc != null)
+                  _buildNpcDialogueOverlay(context, engine.activeDialogueNpc!),
+              ],
+            );
+          },
         );
       },
     );
@@ -218,37 +241,43 @@ class GameHUD extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.fort_rounded,
-                    size: 16,
-                    color: isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'CORAZÓN DE LA ALDEA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 0.8,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.fort_rounded,
+                      size: 16,
+                      color: isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
                     ),
-                  ),
-                ],
-              ),
-              Text(
-                '${townHall.health.toInt()} HP',
-                style: TextStyle(
-                  color: isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
+                    const SizedBox(width: 6),
+                    const Text(
+                      'CORAZÓN DE LA ALDEA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Text(
+                  '${townHall.health.toInt()} HP',
+                  style: TextStyle(
+                    color: isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           ClipRRect(
@@ -390,6 +419,85 @@ class GameHUD extends StatelessWidget {
     );
   }
 
+  Widget _buildActionButtonsCluster(BuildContext context, dynamic player, bool isPortrait) {
+    if (isPortrait) {
+      return Positioned(
+        right: 12,
+        bottom: 12,
+        child: SafeArea(
+          left: false,
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Fila superior de utilidades (Hablar con NPC y Tienda de Aldea)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildNpcTalkButton(context),
+                  const SizedBox(width: 8),
+                  _buildShopButton(context, player),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Fila inferior de combate (Ultimate/Skill y Ataque)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildUltimateSkillButton(player),
+                      _buildSkillButton(player),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  _buildAttackButton(player),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Landscape: distribución horizontal ergonómica
+      return Positioned(
+        right: 16,
+        bottom: 14,
+        child: SafeArea(
+          left: false,
+          top: false,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildNpcTalkButton(context),
+                  const SizedBox(height: 8),
+                  _buildShopButton(context, player),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildUltimateSkillButton(player),
+                  _buildSkillButton(player),
+                ],
+              ),
+              const SizedBox(width: 10),
+              _buildAttackButton(player),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildUltimateSkillButton(dynamic player) {
     final pClass = player.playerClass as PlayerClass;
     final ultimateSkillId = '${pClass.type.name.substring(0, 1)}_ultimate';
@@ -400,13 +508,13 @@ class GameHUD extends StatelessWidget {
     final isReady = cooldownRemaining <= 0;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 12.0),
+      padding: const EdgeInsets.only(bottom: 6.0),
       child: InkWell(
         onTap: isReady ? engine.useUltimateSkill : null,
         borderRadius: BorderRadius.circular(35),
         child: Container(
-          width: 58,
-          height: 58,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isReady
@@ -414,12 +522,12 @@ class GameHUD extends StatelessWidget {
                   : [Colors.grey.shade800, Colors.grey.shade900],
             ),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
+            border: Border.all(color: Colors.white, width: 2.2),
             boxShadow: isReady
                 ? [
                     BoxShadow(
                       color: const Color(0xFFFF5400).withValues(alpha: 0.6),
-                      blurRadius: 12,
+                      blurRadius: 10,
                       spreadRadius: 2,
                     )
                   ]
@@ -428,7 +536,7 @@ class GameHUD extends StatelessWidget {
           child: const Icon(
             Icons.whatshot_rounded,
             color: Colors.white,
-            size: 28,
+            size: 26,
           ),
         ),
       ),
@@ -537,6 +645,163 @@ class GameHUD extends StatelessWidget {
           pClass.isMelee ? Icons.colorize_rounded : Icons.gps_fixed_rounded,
           color: Colors.white,
           size: 34,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNpcTalkButton(BuildContext context) {
+    return InkWell(
+      onTap: engine.interactWithNearbyNpc,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A9D8F),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [
+            BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: const Icon(
+          Icons.record_voice_over_rounded,
+          color: Colors.white,
+          size: 26,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNpcDialogueOverlay(BuildContext context, dynamic npc) {
+    final quest = npc.activeQuest;
+
+    return Container(
+      color: Colors.black54,
+      alignment: Alignment.center,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161A23),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: npc.themeColor, width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: PixelSpriteWidget(
+                    sprite: npc.sprite,
+                    pixelSize: 2.5,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      npc.name,
+                      style: TextStyle(
+                        color: npc.themeColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      npc.title,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '"${npc.dialogue}"',
+              style: const TextStyle(
+                color: Colors.white,
+                fontStyle: FontStyle.italic,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            if (quest != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📜 MISIÓN: ${quest.title}',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD166),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      quest.description,
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recompensa: +${quest.goldReward} Oro | +${quest.xpReward} XP',
+                          style: const TextStyle(
+                            color: Color(0xFF55A630),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                        if (quest.isCompleted && !quest.isClaimed)
+                          ElevatedButton(
+                            onPressed: () => engine.claimActiveQuest(npc),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF55A630),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            ),
+                            child: const Text('RECLAMAR', style: TextStyle(fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: engine.closeNpcDialogue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE63946),
+                ),
+                child: const Text('Cerrar Conversación'),
+              ),
+            ),
+          ],
         ),
       ),
     );

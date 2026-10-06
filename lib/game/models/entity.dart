@@ -22,7 +22,7 @@ class PlayerEntity {
   // Sistema de Nivel y Experiencia RPG
   int level = 1;
   int xp = 0;
-  int xpToNextLevel = 100;
+  int xpToNextLevel = 150;
   int skillPoints = 0;
   final Set<String> unlockedSkillIds = {};
 
@@ -40,7 +40,10 @@ class PlayerEntity {
     required this.playerClass,
   })  : health = playerClass.maxHealth,
         maxHealth = playerClass.maxHealth {
-    // Desbloquear habilidad básica de nivel 1
+    level = 1;
+    xp = 0;
+    xpToNextLevel = 150;
+    skillPoints = 0;
     unlockedSkillIds.add(playerClass.skillTree.first.id);
   }
 
@@ -53,11 +56,11 @@ class PlayerEntity {
       xp -= xpToNextLevel;
       level++;
       skillPoints++;
-      xpToNextLevel = (xpToNextLevel * 1.5).round();
+      xpToNextLevel = xpToNextLevel + 150;
 
-      maxHealth += 25;
-      health = min(maxHealth, health + maxHealth * 0.5);
-      damageMultiplier += 0.10;
+      maxHealth += 20;
+      health = min(maxHealth, health + maxHealth * 0.4);
+      damageMultiplier += 0.08;
 
       AudioEngine.playLevelUp();
     }

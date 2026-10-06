@@ -1139,4 +1139,102 @@ class PixelArtLibrary {
       '................',
     ],
   );
+
+  // ==========================================
+  // 9. NPCS ISEKAI (HERRERO, COMERCIANTE, GREMIO, GUARDIÁN)
+  // ==========================================
+  static final PixelSpriteData npcBlacksmith = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      's': const Color(0xFF8D99AE), // Delantal de cuero y hierro
+      'S': const Color(0xFF2B2D42),
+      'o': const Color(0xFFFF5400), // Martillo caliente
+      'g': const Color(0xFFFFD166),
+    },
+    matrix: [
+      '.....######.....',
+      '....#kkkkkk#....',
+      '...#k#e##e#k#...',
+      '...#kkkkkkkk#...',
+      '....#ssssss#....',
+      '...#SssssssS#...',
+      '..#SSssssssSS#..',
+      '..#SSssssssSS#g#',
+      '..#S#ssssss#S#o#',
+      '...#ssssssss#..#',
+      '...#SSSSSSSS#...',
+      '....#SS##SS#....',
+      '....#SS##SS#....',
+      '...#SSS##SSS#...',
+      '..####....####..',
+      '................',
+    ],
+  );
+
+  static final PixelSpriteData npcMerchant = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      't': const Color(0xFF2A9D8F), // Túnica de mercader turquesa
+      'T': const Color(0xFFE76F51), // Sombrero de viaje
+      'g': const Color(0xFFFFD166), // Sacos de oro
+    },
+    matrix: [
+      '....########....',
+      '..#TTTTTTTTTT#..',
+      '..#TT######TT#..',
+      '...#kkkkkkkk#...',
+      '...#k#e##e#k#...',
+      '...#kkkkkkkk#...',
+      '..#tttttttttt#..',
+      '.#tttttttttttt#.',
+      '#g#tttttttttt#g#',
+      '#gg#tttttttt#gg#',
+      '.#g#tttttttt#g#.',
+      '..#tttttttttt#..',
+      '...#tttttttt#...',
+      '....#tt##tt#....',
+      '....####.####...',
+      '................',
+    ],
+  );
+
+  static final PixelSpriteData npcQuestGiver = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      'w': const Color(0xFFEDF2F4), // Barba blanca sabio
+      'b': const Color(0xFF1D3557), // Túnica arcana azul
+      'g': const Color(0xFFFFD166), // Pergamino de misión
+    },
+    matrix: [
+      '.....######.....',
+      '....#bbbbbb#....',
+      '...#bkkkkkkb#...',
+      '...#k#e##e#k#...',
+      '...#kwwwwwwk#...',
+      '...#wwwwwwww#...',
+      '..#bbwwwwwwbb#..',
+      '.#bbb#bbbb#bbb#.',
+      '.#bbb#gggg#bbb#.',
+      '.#bbb#gggg#bbb#.',
+      '..#bb#gggg#bb#..',
+      '...#bbbbbbbb#...',
+      '...#bbbbbbbb#...',
+      '....#bb##bb#....',
+      '....####.####...',
+      '................',
+    ],
+  );
 }
+
