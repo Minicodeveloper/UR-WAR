@@ -18,11 +18,12 @@ class PlayerEntity {
   double hitFlashTimer = 0.0;
   double walkPhase = 0.0;
   bool isMoving = false;
+  Offset? targetDestination;
 
   // Sistema de Nivel y Experiencia RPG
   int level = 1;
   int xp = 0;
-  int xpToNextLevel = 150;
+  int xpToNextLevel = 300;
   int skillPoints = 0;
   final Set<String> unlockedSkillIds = {};
 
@@ -42,9 +43,20 @@ class PlayerEntity {
         maxHealth = playerClass.maxHealth {
     level = 1;
     xp = 0;
-    xpToNextLevel = 150;
+    xpToNextLevel = xpRequirementForLevel(1);
     skillPoints = 0;
     unlockedSkillIds.add(playerClass.skillTree.first.id);
+  }
+
+  static int xpRequirementForLevel(int lvl) {
+    // Curva RPG balanceada:
+    // Nivel 1 -> 2: 150 XP (sobrevivir oleada 1 + primeras bajas)
+    // Nivel 2 -> 3: 550 XP
+    // Nivel 3 -> 4: 1200 XP
+    // Nivel 4 -> 5: 2100 XP
+    // Nivel 5 -> 6: 3200 XP
+    if (lvl == 1) return 150;
+    return 150 + (lvl - 1) * 250 + (lvl - 1) * (lvl - 1) * 150;
   }
 
   double get currentDamage => playerClass.baseDamage * damageMultiplier;
@@ -56,7 +68,7 @@ class PlayerEntity {
       xp -= xpToNextLevel;
       level++;
       skillPoints++;
-      xpToNextLevel = xpToNextLevel + 150;
+      xpToNextLevel = xpRequirementForLevel(level);
 
       maxHealth += 20;
       health = min(maxHealth, health + maxHealth * 0.4);

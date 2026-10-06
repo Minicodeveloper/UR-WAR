@@ -83,17 +83,20 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                map.name.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
+                              Expanded(
+                                child: Text(
+                                  map.name.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.0,
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: _getDifficultyColor(map.difficultyText).withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10),
@@ -103,7 +106,7 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
                                   map.difficultyText,
                                   style: TextStyle(
                                     color: _getDifficultyColor(map.difficultyText),
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -129,12 +132,12 @@ class _MapSelectScreenState extends State<MapSelectScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
                             children: [
                               _buildBadge(Icons.flag_rounded, '${map.totalWaves} Oleadas'),
-                              const SizedBox(width: 12),
                               _buildBadge(Icons.landscape_rounded, _getBiomeLabel(map.biome)),
-                              const SizedBox(width: 12),
                               _buildBadge(Icons.fort_rounded, 'Aldea Fortificada'),
                             ],
                           ),

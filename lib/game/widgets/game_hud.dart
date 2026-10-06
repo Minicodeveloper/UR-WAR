@@ -26,11 +26,22 @@ class GameHUD extends StatelessWidget {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isPortrait = constraints.maxHeight > constraints.maxWidth;
-            final isSmallScreen = constraints.maxWidth < 600;
+            final mediaQuery = MediaQuery.of(context);
+            final width = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                ? constraints.maxWidth
+                : mediaQuery.size.width;
+            final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                ? constraints.maxHeight
+                : mediaQuery.size.height;
+            final isPortrait = height > width;
+            final isSmallScreen = width < 600;
 
-            return Stack(
-              children: [
+            return SizedBox(
+              width: width,
+              height: height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
                 // ==========================================
                 // 1. BARRA SUPERIOR DE ESTADO Y NIVEL RPG
                 // ==========================================
@@ -111,6 +122,11 @@ class GameHUD extends StatelessWidget {
                   child: VirtualJoystick(
                     radius: isSmallScreen ? 48 : 55,
                     onDirectionChanged: onJoystickDirection,
+                    onTapField: (localPos) {
+                      final topOffset = isPortrait ? 130.0 : 75.0;
+                      final worldPos = Offset(localPos.dx, topOffset + localPos.dy) + engine.cameraOffset;
+                      engine.setTargetDestination(worldPos);
+                    },
                   ),
                 ),
 
@@ -123,11 +139,12 @@ class GameHUD extends StatelessWidget {
                 if (engine.activeDialogueNpc != null)
                   _buildNpcDialogueOverlay(context, engine.activeDialogueNpc!),
               ],
-            );
-          },
-        );
-      },
-    );
+            ),
+          );
+        },
+      );
+    },
+  );
   }
 
   Widget _buildHeroStatus(dynamic player) {

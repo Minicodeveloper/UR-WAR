@@ -151,7 +151,7 @@ class GameEngine extends ChangeNotifier {
         description: 'Elimina 10 enemigos que intenten destruir el Corazón de la Aldea.',
         requiredEnemyKills: 10,
         goldReward: 250,
-        xpReward: 300,
+        xpReward: 120,
       ),
     ));
 
@@ -164,7 +164,7 @@ class GameEngine extends ChangeNotifier {
         position: config.position,
         maxHealth: 450.0 + config.level * 100,
         goldReward: 350 + config.level * 50,
-        xpReward: 450 + config.level * 100,
+        xpReward: 160 + config.level * 40,
       ));
     }
 
@@ -290,7 +290,7 @@ class GameEngine extends ChangeNotifier {
           4.0,
         );
         player.gold += 60 * waveSystem.currentWave;
-        player.addXp(150 * waveSystem.currentWave);
+        player.addXp(60 + 25 * waveSystem.currentWave);
       }
     }
 
@@ -368,27 +368,71 @@ class GameEngine extends ChangeNotifier {
   void movePlayer(Offset inputDirection, double dt) {
     if (isGameOver || isVictory || isPaused) return;
 
-    if (inputDirection == Offset.zero) {
-      player.isMoving = false;
+    if (inputDirection != Offset.zero) {
+      // Input directo de joystick/teclado anula destino táctil
+      player.targetDestination = null;
+      player.isMoving = true;
+      final normalized = inputDirection / inputDirection.distance;
+      final speed = player.currentSpeed;
+      final newPos = player.position + normalized * (speed * dt);
+
+      const padding = 30.0;
+      final clampedX = newPos.dx.clamp(padding, map.worldWidth - padding);
+      final clampedY = newPos.dy.clamp(padding, map.worldHeight - padding);
+
+      if (normalized.dx < -0.1) {
+        player.facingLeft = true;
+      } else if (normalized.dx > 0.1) {
+        player.facingLeft = false;
+      }
+
+      player.position = Offset(clampedX, clampedY);
       return;
     }
 
-    player.isMoving = true;
-    final normalized = inputDirection / inputDirection.distance;
-    final speed = player.currentSpeed;
-    final newPos = player.position + normalized * (speed * dt);
+    // Si no hay input directo, comprobar si el jugador tocó en el mapa para moverse (Tap to Move)
+    if (player.targetDestination != null) {
+      final delta = player.targetDestination! - player.position;
+      final dist = delta.distance;
+      if (dist <= 8.0) {
+        player.targetDestination = null;
+        player.isMoving = false;
+      } else {
+        player.isMoving = true;
+        final dir = delta / dist;
+        final speed = player.currentSpeed;
+        final newPos = player.position + dir * (speed * dt);
 
-    const padding = 30.0;
-    final clampedX = newPos.dx.clamp(padding, map.worldWidth - padding);
-    final clampedY = newPos.dy.clamp(padding, map.worldHeight - padding);
+        const padding = 30.0;
+        final clampedX = newPos.dx.clamp(padding, map.worldWidth - padding);
+        final clampedY = newPos.dy.clamp(padding, map.worldHeight - padding);
 
-    if (normalized.dx < -0.1) {
-      player.facingLeft = true;
-    } else if (normalized.dx > 0.1) {
-      player.facingLeft = false;
+        if (dir.dx < -0.1) {
+          player.facingLeft = true;
+        } else if (dir.dx > 0.1) {
+          player.facingLeft = false;
+        }
+
+        player.position = Offset(clampedX, clampedY);
+      }
+      return;
     }
 
-    player.position = Offset(clampedX, clampedY);
+    player.isMoving = false;
+  }
+
+  void setTargetDestination(Offset worldPos) {
+    if (isGameOver || isVictory || isPaused) return;
+    const padding = 30.0;
+    final clampedX = worldPos.dx.clamp(padding, map.worldWidth - padding);
+    final clampedY = worldPos.dy.clamp(padding, map.worldHeight - padding);
+    player.targetDestination = Offset(clampedX, clampedY);
+    notifyListeners();
+  }
+
+  void clearTargetDestination() {
+    player.targetDestination = null;
+    notifyListeners();
   }
 
   /// Ejecución de ataque primario

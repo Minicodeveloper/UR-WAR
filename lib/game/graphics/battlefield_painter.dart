@@ -41,7 +41,8 @@ class BattlefieldPainter extends CustomPainter {
     // 6. DIBUJAR ENEMIGOS
     _paintEnemies(canvas);
 
-    // 7. DIBUJAR JUGADOR
+    // 7. DIBUJAR JUGADOR Y DESTINO TÁCTIL
+    _paintTargetDestination(canvas);
     _paintPlayer(canvas);
 
     // 8. DIBUJAR PROYECTILES
@@ -350,6 +351,32 @@ class BattlefieldPainter extends CustomPainter {
       barColor: const Color(0xFF55A630),
       label: 'Nvl ${player.level} ${player.playerClass.name}',
     );
+  }
+
+  void _paintTargetDestination(Canvas canvas) {
+    final dest = engine.player.targetDestination;
+    if (dest == null) return;
+
+    final pulse = (DateTime.now().millisecondsSinceEpoch % 1200) / 1200.0;
+    final radius = 10.0 + pulse * 14.0;
+    final alpha = (1.0 - pulse).clamp(0.0, 1.0);
+
+    final ringPaint = Paint()
+      ..color = const Color(0xFFFFD166).withValues(alpha: alpha * 0.85)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+    canvas.drawCircle(dest, radius, ringPaint);
+
+    final dotPaint = Paint()
+      ..color = const Color(0xFFFFD166)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(dest, 4.5, dotPaint);
+
+    final linePaint = Paint()
+      ..color = const Color(0xFFFFD166).withValues(alpha: 0.25)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(engine.player.position, dest, linePaint);
   }
 
   void _paintProjectiles(Canvas canvas) {

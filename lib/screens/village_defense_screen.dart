@@ -154,12 +154,23 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
           builder: (context, constraints) {
             _engine.setViewportSize(Size(constraints.maxWidth, constraints.maxHeight));
 
-            return Stack(
-              children: [
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
                 // 1. Lienzo gráfico del campo de batalla
                 Positioned.fill(
-                  child: CustomPaint(
-                    painter: BattlefieldPainter(engine: _engine),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) {
+                      final worldPos = details.localPosition + _engine.cameraOffset;
+                      _engine.setTargetDestination(worldPos);
+                    },
+                    child: CustomPaint(
+                      painter: BattlefieldPainter(engine: _engine),
+                    ),
                   ),
                 ),
 
@@ -193,9 +204,10 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
                   },
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
+      ),
       ),
     );
   }
