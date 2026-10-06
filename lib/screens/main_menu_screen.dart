@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
+import 'character_select_screen.dart';
 import 'credits_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
@@ -11,15 +12,6 @@ class MainMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- ELEMENTO DE DIAGNÓSTICO VISUAL TEMPORAL ---
-      appBar: AppBar(
-        backgroundColor: Colors.green.shade800,
-        title: const Text(
-          'Rama feature/diagnostico-interfaz aprobada',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -69,10 +61,27 @@ class MainMenuScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 48),
+
+                  // Botón principal: JUGAR (Defensa de la Aldea y Roles de Héroes)
                   _MenuButton(
-                    icon: Icons.play_arrow_rounded,
+                    icon: Icons.shield_rounded,
                     label: 'JUGAR',
                     isPrimary: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CharacterSelectScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Botón secundario: ARENA TÁCTICA
+                  _MenuButton(
+                    icon: Icons.grid_view_rounded,
+                    label: 'ARENA TÁCTICA',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -83,6 +92,8 @@ class MainMenuScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
+
+                  // Ajustes
                   _MenuButton(
                     icon: Icons.settings_rounded,
                     label: 'AJUSTES',
@@ -96,6 +107,8 @@ class MainMenuScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
+
+                  // Créditos
                   _MenuButton(
                     icon: Icons.group_rounded,
                     label: 'CRÉDITOS & OPEN SOURCE',
