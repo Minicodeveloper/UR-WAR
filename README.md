@@ -20,6 +20,33 @@
 
 ---
 
+## 🎮 Modos de Juego
+
+### 🏰 1. Defensa de la Aldea (Modo Principal)
+- **Selección de Héroes y Roles**:
+  - ⚔️ **Caballero Imperial**: Tanque y daño cuerpo a cuerpo con habilidad *Torbellino de Acero*.
+  - 🏹 **Cazadora Silvana**: Tiradora rápida a distancia con habilidad *Lluvia de Flechas*.
+  - 🔮 **Mago Arcano**: Hechicero de daño explosivo en área con habilidad *Meteoro Cataclísmico*.
+  - 🛡️ **Guardiana Sagrada**: Soporte defensivo con habilidad *Bendición Protectora* (repara aldea y cura aliados).
+- **Mapas y Biomas**:
+  - 🌲 **Valle Esmeralda**: Bosque templado con defensas de madera noble.
+  - ❄️ **Bastión Nevado**: Cumbres gélidas con ventiscas y orcos endurecidos.
+  - 🔥 **Garganta Ardiente**: Terreno volcánico de alta dificultad con ríos de lava.
+- **Gráficos en Pixel Art**:
+  - Personajes, enemigos, jefes y estructuras detalladas en matrices pixel-art auténticas (sin puntos abstractos).
+- **Mecánicas**:
+  - Núcleo de la Aldea (Salón Comunal) y torres de vigilancia defensivas automáticas.
+  - Oleadas de invasores (Goblins, Orcos Berserkers, Esqueletos Arqueros, Nigromantes y Titanes).
+  - Tienda de mejoras y reparaciones con oro recogido en batalla.
+- **Controles**:
+  - **Táctil / Móvil**: Joystick analógico virtual y botones táctiles con recarga.
+  - **Teclado / Desktop / Web**: `W, A, S, D` o `Flechas` para mover, `Espacio` o `J` para atacar, `K` o `E` para habilidad especial, `B` para abrir la tienda, `Esc` o `P` para pausar.
+
+### 🤖 2. Arena Táctica de Robots
+- Combate táctico por turnos en cuadrícula con puntos de acción y gestión de energía.
+
+---
+
 ## 🚀 Comenzar / Instalación
 
 ### Prerrequisitos
