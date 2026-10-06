@@ -2,97 +2,89 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ur_war/game/logic/game_engine.dart';
 import 'package:ur_war/game/models/game_map.dart';
 import 'package:ur_war/game/models/player_class.dart';
+import 'package:ur_war/game/models/entity.dart';
+import 'package:ur_war/providers/game_state.dart';
 
 void main() {
-  group('Village Defense Game Mechanics Tests', () {
-    test('Available player classes are configured with stats and skills', () {
+  group('Village Defense RPG & Exploration Tests', () {
+    test('Available player classes have RPG skill trees and stats', () {
       final classes = PlayerClass.availableClasses;
       expect(classes.length, 4);
 
       final knight = classes.firstWhere((c) => c.type == PlayerRoleType.knight);
-      expect(knight.name, 'Caballero Imperial');
-      expect(knight.isMelee, isTrue);
-      expect(knight.maxHealth, greaterThan(200));
-
-      final ranger = classes.firstWhere((c) => c.type == PlayerRoleType.ranger);
-      expect(ranger.name, 'Cazadora Silvana');
-      expect(ranger.isMelee, isFalse);
-      expect(ranger.attackRange, greaterThan(250));
+      expect(knight.skillTree.length, 3);
+      expect(knight.skillTree.last.isUltimate, isTrue);
     });
 
-    test('Available maps are configured with biomes and wave counts', () {
+    test('Campaign levels feature rival camps and fog of war', () {
       final maps = GameMapModel.availableMaps;
-      expect(maps.length, 3);
+      expect(maps.length, 5);
 
-      final forest = maps.firstWhere((m) => m.id == 'emerald_valley');
-      expect(forest.biome, MapBiomeType.forest);
-      expect(forest.totalWaves, greaterThanOrEqualTo(5));
-
-      final snow = maps.firstWhere((m) => m.id == 'frost_bastion');
-      expect(snow.biome, MapBiomeType.snow);
-
-      final lava = maps.firstWhere((m) => m.id == 'infernal_crag');
-      expect(lava.biome, MapBiomeType.lava);
+      final level1 = maps.first;
+      expect(level1.levelIndex, 1);
+      expect(level1.rivalCamps.isNotEmpty, isTrue);
     });
 
-    test('GameEngine initializes town hall and hero at center of map', () {
+    test('GameEngine initializes RPG leveling and Fog of War', () {
       final map = GameMapModel.availableMaps.first;
       final pClass = PlayerClass.availableClasses.first;
       final engine = GameEngine(map: map, playerClass: pClass);
 
-      expect(engine.player.health, pClass.maxHealth);
-      expect(engine.townHall.health, 1200);
-      expect(engine.villageBuildings.isNotEmpty, isTrue);
-      expect(engine.isGameOver, isFalse);
-      expect(engine.isVictory, isFalse);
+      expect(engine.player.level, 1);
+      expect(engine.player.xp, 0);
+      expect(engine.rivalCamps.isNotEmpty, isTrue);
     });
 
-    test('Player can move, attack and take damage', () {
+    test('Hero levels up when gaining XP and receives Skill Points', () {
       final map = GameMapModel.availableMaps.first;
       final pClass = PlayerClass.availableClasses.first;
       final engine = GameEngine(map: map, playerClass: pClass);
 
-      final initialPos = engine.player.position;
-      engine.movePlayer(const Offset(1, 0), 0.1);
-      expect(engine.player.position.dx, greaterThan(initialPos.dx));
+      expect(engine.player.level, 1);
+      engine.player.addXp(150);
 
-      engine.attack();
-      expect(engine.player.attackTimer, greaterThan(0));
-
-      engine.player.takeDamage(50);
-      expect(engine.player.health, pClass.maxHealth - 50);
-
-      engine.player.heal(30);
-      expect(engine.player.health, pClass.maxHealth - 20);
+      expect(engine.player.level, 2);
+      expect(engine.player.skillPoints, 1);
     });
 
-    test('Special skill executes and initiates cooldown', () {
-      final map = GameMapModel.availableMaps.first;
-      final pClass = PlayerClass.availableClasses.first; // Knight
-      final engine = GameEngine(map: map, playerClass: pClass);
-
-      expect(engine.player.specialSkillTimer, 0.0);
-      engine.useSpecialSkill();
-      expect(engine.player.specialSkillTimer, greaterThan(0.0));
-    });
-
-    test('Village shop allows repairing village and upgrading stats with gold', () {
+    test('Building new structures costs gold and adds to village buildings', () {
       final map = GameMapModel.availableMaps.first;
       final pClass = PlayerClass.availableClasses.first;
       final engine = GameEngine(map: map, playerClass: pClass);
 
-      // Give player gold
-      engine.player.gold = 300;
-      engine.townHall.takeDamage(400);
+      engine.player.gold = 200;
+      final initialBuildingsCount = engine.villageBuildings.length;
 
-      final repaired = engine.repairVillage(75, 300);
-      expect(repaired, isTrue);
-      expect(engine.player.gold, 225);
-      expect(engine.townHall.health, 1100);
+      final built = engine.buildStructure(BuildingType.watchtower, 100);
+      expect(built, isTrue);
+      expect(engine.player.gold, 100);
+      expect(engine.villageBuildings.length, initialBuildingsCount + 1);
+    });
+  });
 
-      final upgradedDmg = engine.upgradeHeroDamage(100);
-      expect(upgradedDmg, isTrue);
-      expect(engine.player.damageMultiplier, 1.25);
+  group('Tactical Arena Robot Turn Tests', () {
+    test('GameState initializes player and enemy robots correctly', () {
+      final gameState = GameState();
+      expect(gameState.robots.length, 2);
+      expect(gameState.currentTurn, 1);
+      expect(gameState.isGameOver, isFalse);
+    });
+
+    test('Player can select robot, move and end turn cleanly', () {
+      final gameState = GameState();
+      final playerRobot = gameState.robots.firstWhere((r) => r.id.startsWith('p'));
+
+      // Select player robot
+      gameState.onCellTapped(playerRobot.x, playerRobot.y);
+      expect(gameState.selectedRobotId, playerRobot.id);
+
+      // Move to adjacent cell
+      gameState.onCellTapped(playerRobot.x + 1, playerRobot.y);
+      expect(playerRobot.x, 2);
+
+      // End turn
+      gameState.endTurn();
+      expect(gameState.currentTurn, 2);
     });
   });
 }

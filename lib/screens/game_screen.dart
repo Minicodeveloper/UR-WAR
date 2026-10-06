@@ -1,81 +1,195 @@
 import 'package:flutter/material.dart';
-
-// 1. Importamos nuestra herramienta de comunicación y nuestro cerebro
 import 'package:provider/provider.dart';
-import '../providers/game_state.dart';
 import '../models/robot.dart';
+import '../providers/game_state.dart';
 
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 2. ¡SINTONIZAMOS LA RADIO!
-    // Al usar "watch", esta pantalla se quedará escuchando. 
-    // Cuando GameState grite "notifyListeners()", esta pantalla se redibujará sola.
     final gameState = context.watch<GameState>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        // NUEVO: El texto ahora es dinámico y lee el turno actual del GameState
-        title: Text('Arena Táctica - Turno ${gameState.currentTurn}'),
-      ),
-      // Centramos nuestro tablero en la pantalla
-      body: Center(
-        // 3. GridView es el componente de Flutter perfecto para crear cuadrículas
-        child: GridView.builder(
-          itemCount: 64, // 8 filas x 8 columnas = 64 casillas
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 8, // Le decimos que queremos 8 casillas por fila
+        title: Text(
+          'ARENA TÁCTICA - TURNO ${gameState.currentTurn}',
+          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Reiniciar Partida',
+            onPressed: () => gameState.resetGame(),
           ),
-          itemBuilder: (context, index) {
-            // 4. MATEMÁTICAS SIMPLES: Convertimos el número de casilla (del 0 al 63) 
-            // en coordenadas X (horizontal) y Y (vertical)
-            int x = index % 8;
-            int y = index ~/ 8; // El símbolo '~/' divide y nos da un número entero
-
-            // 5. BUSCAMOS AL ROBOT: Le preguntamos al GameState si en la lista 
-            // de robots hay alguno que tenga exactamente estas coordenadas 'x' e 'y'.
-            Robot? robot = gameState.robots
-                .where((r) => r.x == x && r.y == y)
-                .firstOrNull;
-
-           // NUEVO: Saber si ESTE robot específico es el que está seleccionado
-            bool isSelected = robot != null && robot.id == gameState.selectedRobotId;
-
-            // NUEVO: Envolvemos el Container en un GestureDetector
-            return GestureDetector(
-              onTap: () {
-                // Cuando el usuario toque aquí, le avisamos al Cerebro las coordenadas
-                gameState.onCellTapped(x, y);
-              },
-              child: Container(
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Banner de registro de acciones y logs
+            if (gameState.logs != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                margin: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  // Si está seleccionado lo pintamos de amarillo claro, si no, gris
-                  color: isSelected ? Colors.yellow.shade200 : Colors.grey.shade100, 
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
                 ),
-                child: robot != null
-                    ? Icon(
-                        Icons.smart_toy, 
-                        color: robot.id.startsWith('p') ? Colors.blue : Colors.red,
-                      )
-                    : null,
+                child: Text(
+                  gameState.logs!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFA8DADC),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            );
-          },
+
+            // Tablero de juego interactivo
+            Expanded(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1.0,
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161A23),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF457B9D), width: 3),
+                    ),
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 64,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 8,
+                      ),
+                      itemBuilder: (context, index) {
+                        int x = index % 8;
+                        int y = index ~/ 8;
+
+                        Robot? robot = gameState.robots
+                            .where((r) => r.x == x && r.y == y && r.hp > 0)
+                            .firstOrNull;
+
+                        bool isSelected = robot != null && robot.id == gameState.selectedRobotId;
+                        bool isPlayer = robot != null && robot.id.startsWith('p');
+
+                        return GestureDetector(
+                          onTap: () => gameState.onCellTapped(x, y),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFFFD166).withValues(alpha: 0.3)
+                                  : ((x + y) % 2 == 0
+                                      ? Colors.white.withValues(alpha: 0.04)
+                                      : Colors.transparent),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFFFFD166)
+                                    : Colors.white.withValues(alpha: 0.08),
+                                width: isSelected ? 2.5 : 0.5,
+                              ),
+                            ),
+                            child: robot != null
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Icono de Robot
+                                      Icon(
+                                        Icons.smart_toy_rounded,
+                                        size: 28,
+                                        color: isPlayer
+                                            ? const Color(0xFF00BBF9)
+                                            : const Color(0xFFEF233C),
+                                      ),
+                                      const SizedBox(height: 2),
+
+                                      // Barra de Salud de la Unidad
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(2),
+                                          child: LinearProgressIndicator(
+                                            value: (robot.hp / robot.maxHp).clamp(0.0, 1.0),
+                                            minHeight: 4,
+                                            backgroundColor: Colors.black45,
+                                            valueColor: AlwaysStoppedAnimation(
+                                              isPlayer ? Colors.green : Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Badge de Puntos de Acción
+                                      if (isPlayer)
+                                        Text(
+                                          '⚡${robot.actionPoints}',
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            color: Color(0xFFFFD166),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                    ],
+                                  )
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Modal de fin de juego si terminó la partida táctica
+            if (gameState.isGameOver)
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFD166), width: 2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      gameState.winnerMessage,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFD166),
+                        foregroundColor: Colors.black,
+                      ),
+                      onPressed: () => gameState.resetGame(),
+                      child: const Text('REINICIAR'),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
-
-      // NUEVO: Agregamos el botón flotante en la esquina inferior
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Al presionar, ejecutamos la función que acabamos de crear
-          gameState.endTurn();
-        },
-        label: const Text('Fin de Turno'),
-        icon: const Icon(Icons.skip_next),
+        onPressed: gameState.endTurn,
+        backgroundColor: const Color(0xFFE63946),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.skip_next_rounded),
+        label: const Text('PASAR TURNO'),
       ),
-    ); // Aquí cierra el Scaffold
+    );
   }
 }

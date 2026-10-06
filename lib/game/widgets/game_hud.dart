@@ -27,7 +27,7 @@ class GameHUD extends StatelessWidget {
         return Stack(
           children: [
             // ==========================================
-            // BARRA SUPERIOR DE ESTADO
+            // BARRA SUPERIOR DE ESTADO Y NIVEL RPG
             // ==========================================
             SafeArea(
               child: Padding(
@@ -37,7 +37,7 @@ class GameHUD extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Retrato y vida del Héroe
+                        // Retrato, Nivel y XP del Héroe
                         _buildHeroStatus(player),
                         const SizedBox(width: 12),
 
@@ -52,7 +52,7 @@ class GameHUD extends StatelessWidget {
 
                     // Banner de Anuncio en pantalla si está activo
                     if (engine.announcementBanner != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _buildAnnouncementBanner(engine.announcementBanner!),
                     ],
                   ],
@@ -64,11 +64,11 @@ class GameHUD extends StatelessWidget {
             // CONTROLES INFERIORES: JOYSTICK A LA IZQUIERDA
             // ==========================================
             Positioned(
-              left: 24,
-              bottom: 28,
+              left: 20,
+              bottom: 24,
               child: SafeArea(
                 child: VirtualJoystick(
-                  radius: 65,
+                  radius: 60,
                   onDirectionChanged: onJoystickDirection,
                 ),
               ),
@@ -78,19 +78,22 @@ class GameHUD extends StatelessWidget {
             // BOTONES DE ACCIÓN A LA DERECHA
             // ==========================================
             Positioned(
-              right: 24,
-              bottom: 24,
+              right: 20,
+              bottom: 20,
               child: SafeArea(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Botón de Tienda de la Aldea
+                    // Botón de Tienda de la Aldea y Construcción
                     _buildShopButton(context, player),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
+
+                    // Botón Habilidad Definitiva (Ultimate) si está desbloqueada
+                    _buildUltimateSkillButton(player),
 
                     // Botón de Habilidad Especial
                     _buildSkillButton(player),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
 
                     // Botón de Ataque Primario
                     _buildAttackButton(player),
@@ -107,6 +110,7 @@ class GameHUD extends StatelessWidget {
   Widget _buildHeroStatus(dynamic player) {
     final pClass = player.playerClass as PlayerClass;
     final hpPct = (player.health / player.maxHealth).clamp(0.0, 1.0);
+    final xpPct = (player.xp / player.xpToNextLevel).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(8),
@@ -139,19 +143,31 @@ class GameHUD extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                pClass.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Nvl ${player.level} ',
+                    style: const TextStyle(
+                      color: Color(0xFFFFD166),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    pClass.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               // Barra de vida
               SizedBox(
                 width: 90,
-                height: 8,
+                height: 7,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -161,10 +177,19 @@ class GameHUD extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${player.health.toInt()} / ${player.maxHealth.toInt()} HP',
-                style: const TextStyle(color: Colors.white70, fontSize: 9),
+              const SizedBox(height: 3),
+              // Barra de Experiencia (XP)
+              SizedBox(
+                width: 90,
+                height: 4,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: xpPct,
+                    backgroundColor: Colors.white12,
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF00BBF9)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -216,7 +241,7 @@ class GameHUD extends StatelessWidget {
                 ],
               ),
               Text(
-                '${townHall.health.toInt()} / ${townHall.maxHealth.toInt()}',
+                '${townHall.health.toInt()} HP',
                 style: TextStyle(
                   color: isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
                   fontWeight: FontWeight.bold,
@@ -230,7 +255,7 @@ class GameHUD extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: hpPct,
-              minHeight: 10,
+              minHeight: 8,
               backgroundColor: Colors.white12,
               valueColor: AlwaysStoppedAnimation(
                 isLowHp ? const Color(0xFFEF233C) : const Color(0xFF00BBF9),
@@ -244,7 +269,7 @@ class GameHUD extends StatelessWidget {
 
   Widget _buildWaveAndGold(dynamic wave, dynamic player, BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161A23).withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(16),
@@ -259,28 +284,28 @@ class GameHUD extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🚩 ', style: TextStyle(fontSize: 12)),
+              const Text('🚩 ', style: TextStyle(fontSize: 11)),
               Text(
                 'OLEADA ${wave.currentWave}/${wave.maxWaves}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🪙 ', style: TextStyle(fontSize: 12)),
+              const Text('🪙 ', style: TextStyle(fontSize: 11)),
               Text(
                 '${player.gold}',
                 style: const TextStyle(
                   color: Color(0xFFFFD166),
                   fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -292,7 +317,7 @@ class GameHUD extends StatelessWidget {
 
   Widget _buildAnnouncementBanner(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFE63946).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(24),
@@ -306,15 +331,17 @@ class GameHUD extends StatelessWidget {
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: FontWeight.w900,
-          letterSpacing: 1.2,
+          letterSpacing: 1.1,
         ),
       ),
     );
   }
 
   Widget _buildShopButton(BuildContext context, dynamic player) {
+    final hasPoints = player.skillPoints > 0;
+
     return InkWell(
       onTap: () {
         showDialog(
@@ -323,21 +350,86 @@ class GameHUD extends StatelessWidget {
         );
       },
       borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E2330).withValues(alpha: 0.9),
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFFFD166), width: 2),
-          boxShadow: const [
-            BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4)),
-          ],
-        ),
-        child: const Icon(
-          Icons.storefront_rounded,
-          color: Color(0xFFFFD166),
-          size: 28,
+      child: Stack(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E2330).withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFFFD166), width: 2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 4)),
+              ],
+            ),
+            child: const Icon(
+              Icons.storefront_rounded,
+              color: Color(0xFFFFD166),
+              size: 26,
+            ),
+          ),
+          if (hasPoints)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF55A630),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${player.skillPoints}',
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUltimateSkillButton(dynamic player) {
+    final pClass = player.playerClass as PlayerClass;
+    final ultimateSkillId = '${pClass.type.name.substring(0, 1)}_ultimate';
+    final isUnlocked = player.unlockedSkillIds.contains(ultimateSkillId);
+    if (!isUnlocked) return const SizedBox.shrink();
+
+    final cooldownRemaining = player.ultimateSkillTimer;
+    final isReady = cooldownRemaining <= 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12.0),
+      child: InkWell(
+        onTap: isReady ? engine.useUltimateSkill : null,
+        borderRadius: BorderRadius.circular(35),
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isReady
+                  ? [const Color(0xFFFF5400), const Color(0xFFFFB703)]
+                  : [Colors.grey.shade800, Colors.grey.shade900],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2.5),
+            boxShadow: isReady
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFFF5400).withValues(alpha: 0.6),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    )
+                  ]
+                : [],
+          ),
+          child: const Icon(
+            Icons.whatshot_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
         ),
       ),
     );
@@ -358,8 +450,8 @@ class GameHUD extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Container(
-            width: 62,
-            height: 62,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isReady
@@ -384,13 +476,13 @@ class GameHUD extends StatelessWidget {
             child: Icon(
               Icons.auto_awesome,
               color: isReady ? Colors.white : Colors.white38,
-              size: 30,
+              size: 28,
             ),
           ),
           if (!isReady)
             SizedBox(
-              width: 62,
-              height: 62,
+              width: 58,
+              height: 58,
               child: CircularProgressIndicator(
                 value: cooldownPct,
                 strokeWidth: 3,
@@ -404,7 +496,7 @@ class GameHUD extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
         ],
@@ -419,8 +511,8 @@ class GameHUD extends StatelessWidget {
       onTap: engine.attack,
       borderRadius: BorderRadius.circular(40),
       child: Container(
-        width: 78,
-        height: 78,
+        width: 74,
+        height: 74,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -444,7 +536,7 @@ class GameHUD extends StatelessWidget {
         child: Icon(
           pClass.isMelee ? Icons.colorize_rounded : Icons.gps_fixed_rounded,
           color: Colors.white,
-          size: 36,
+          size: 34,
         ),
       ),
     );

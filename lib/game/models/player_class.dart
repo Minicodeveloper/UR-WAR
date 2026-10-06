@@ -8,6 +8,28 @@ enum PlayerRoleType {
   cleric,
 }
 
+class HeroSkill {
+  final String id;
+  final String name;
+  final String description;
+  final int requiredLevel;
+  final IconData icon;
+  final double cooldownSeconds;
+  final bool isPassive;
+  final bool isUltimate;
+
+  const HeroSkill({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.requiredLevel,
+    required this.icon,
+    required this.cooldownSeconds,
+    this.isPassive = false,
+    this.isUltimate = false,
+  });
+}
+
 class PlayerClass {
   final PlayerRoleType type;
   final String name;
@@ -26,6 +48,7 @@ class PlayerClass {
   final PixelSpriteData spriteIdle;
   final PixelSpriteData spriteAttack;
   final String weaponName;
+  final List<HeroSkill> skillTree;
 
   const PlayerClass({
     required this.type,
@@ -45,6 +68,7 @@ class PlayerClass {
     required this.spriteIdle,
     required this.spriteAttack,
     required this.weaponName,
+    required this.skillTree,
   });
 
   static final List<PlayerClass> availableClasses = [
@@ -68,6 +92,34 @@ class PlayerClass {
       spriteIdle: PixelArtLibrary.knightIdle,
       spriteAttack: PixelArtLibrary.knightAttack,
       weaponName: 'Mandoble de Acero',
+      skillTree: const [
+        HeroSkill(
+          id: 'k_active_1',
+          name: 'Torbellino de Acero',
+          description: 'Corta a 360° repeliendo enemigos.',
+          requiredLevel: 1,
+          icon: Icons.sync_rounded,
+          cooldownSeconds: 6.0,
+        ),
+        HeroSkill(
+          id: 'k_passive_1',
+          name: 'Coraza Impenetrable',
+          description: 'Pasiva: Reduce un 25% todo el daño recibido.',
+          requiredLevel: 3,
+          icon: Icons.shield_rounded,
+          cooldownSeconds: 0.0,
+          isPassive: true,
+        ),
+        HeroSkill(
+          id: 'k_ultimate',
+          name: 'Impacto Sísmico',
+          description: 'Definitiva: Terremoto que aturde y daña a todos los enemigos en 200px.',
+          requiredLevel: 5,
+          icon: Icons.electric_bolt_rounded,
+          cooldownSeconds: 12.0,
+          isUltimate: true,
+        ),
+      ],
     ),
     PlayerClass(
       type: PlayerRoleType.ranger,
@@ -82,13 +134,41 @@ class PlayerClass {
       attackCooldownSeconds: 0.35,
       specialSkillName: 'Lluvia de Flechas',
       specialSkillDescription:
-          'Dispara una ráfaga masiva en abanico de 8 flechas perforantes simultáneas.',
+          'Dispara una ráfaga masiva en abanico de 9 flechas perforantes simultáneas.',
       specialSkillCooldownSeconds: 5.0,
       isMelee: false,
       themeColor: const Color(0xFF2B9348),
       spriteIdle: PixelArtLibrary.rangerIdle,
       spriteAttack: PixelArtLibrary.rangerAttack,
       weaponName: 'Arco Compuesto Élfico',
+      skillTree: const [
+        HeroSkill(
+          id: 'r_active_1',
+          name: 'Lluvia de Flechas',
+          description: 'Ráfaga de 9 flechas perforantes.',
+          requiredLevel: 1,
+          icon: Icons.grain_rounded,
+          cooldownSeconds: 5.0,
+        ),
+        HeroSkill(
+          id: 'r_passive_1',
+          name: 'Ojo de Águila',
+          description: 'Pasiva: Aumenta la velocidad de ataque un 30%.',
+          requiredLevel: 3,
+          icon: Icons.visibility_rounded,
+          cooldownSeconds: 0.0,
+          isPassive: true,
+        ),
+        HeroSkill(
+          id: 'r_ultimate',
+          name: 'Flecha del Dragón',
+          description: 'Definitiva: Proyectil gigante incandescente que atraviesa todo el mapa.',
+          requiredLevel: 5,
+          icon: Icons.local_fire_department_rounded,
+          cooldownSeconds: 10.0,
+          isUltimate: true,
+        ),
+      ],
     ),
     PlayerClass(
       type: PlayerRoleType.mage,
@@ -110,6 +190,34 @@ class PlayerClass {
       spriteIdle: PixelArtLibrary.mageIdle,
       spriteAttack: PixelArtLibrary.mageIdle,
       weaponName: 'Báculo de Fuego Astral',
+      skillTree: const [
+        HeroSkill(
+          id: 'm_active_1',
+          name: 'Meteoro Cataclísmico',
+          description: 'Explosión arcana masiva en área.',
+          requiredLevel: 1,
+          icon: Icons.auto_awesome_rounded,
+          cooldownSeconds: 7.5,
+        ),
+        HeroSkill(
+          id: 'm_passive_1',
+          name: 'Sifón de Maná',
+          description: 'Pasiva: Restaura 15 HP al matar enemigos con magia.',
+          requiredLevel: 3,
+          icon: Icons.local_pharmacy_rounded,
+          cooldownSeconds: 0.0,
+          isPassive: true,
+        ),
+        HeroSkill(
+          id: 'm_ultimate',
+          name: 'Tormenta de Escarcha',
+          description: 'Definitiva: Congela y ralentiza un 80% a todos los enemigos durante 6s.',
+          requiredLevel: 5,
+          icon: Icons.ac_unit_rounded,
+          cooldownSeconds: 14.0,
+          isUltimate: true,
+        ),
+      ],
     ),
     PlayerClass(
       type: PlayerRoleType.cleric,
@@ -131,6 +239,34 @@ class PlayerClass {
       spriteIdle: PixelArtLibrary.clericIdle,
       spriteAttack: PixelArtLibrary.clericIdle,
       weaponName: 'Martillo Rúnico Divino',
+      skillTree: const [
+        HeroSkill(
+          id: 'c_active_1',
+          name: 'Bendición Protectora',
+          description: 'Cura al héroe y repara el Salón Comunal.',
+          requiredLevel: 1,
+          icon: Icons.favorite_rounded,
+          cooldownSeconds: 9.0,
+        ),
+        HeroSkill(
+          id: 'c_passive_1',
+          name: 'Aura Celestial',
+          description: 'Pasiva: Regenera 5 HP por segundo a todas las torres aliadas.',
+          requiredLevel: 3,
+          icon: Icons.wb_sunny_rounded,
+          cooldownSeconds: 0.0,
+          isPassive: true,
+        ),
+        HeroSkill(
+          id: 'c_ultimate',
+          name: 'Escudo Divino',
+          description: 'Definitiva: Otorga invulnerabilidad total a la aldea durante 6 segundos.',
+          requiredLevel: 5,
+          icon: Icons.security_rounded,
+          cooldownSeconds: 15.0,
+          isUltimate: true,
+        ),
+      ],
     ),
   ];
 }

@@ -29,39 +29,43 @@ class BattlefieldPainter extends CustomPainter {
     // 3. DIBUJAR OBSTÁCULOS AMBIENTALES
     _paintObstacles(canvas, map);
 
-    // 4. DIBUJAR EDIFICIOS DE LA ALDEA
+    // 4. DIBUJAR CAMPAMENTOS RIVALES
+    _paintRivalCamps(canvas);
+
+    // 5. DIBUJAR EDIFICIOS DE LA ALDEA Y CONSTRUCCIONES
     _paintVillageBuildings(canvas);
 
-    // 5. DIBUJAR ENEMIGOS
+    // 6. DIBUJAR ENEMIGOS
     _paintEnemies(canvas);
 
-    // 6. DIBUJAR JUGADOR
+    // 7. DIBUJAR JUGADOR
     _paintPlayer(canvas);
 
-    // 7. DIBUJAR PROYECTILES
+    // 8. DIBUJAR PROYECTILES
     _paintProjectiles(canvas);
 
-    // 8. DIBUJAR PARTÍCULAS
+    // 9. DIBUJAR PARTÍCULAS
     _paintParticles(canvas);
 
-    // 9. DIBUJAR TEXTOS FLOTANTES
+    // 10. DIBUJAR TEXTOS FLOTANTES
     _paintFloatingTexts(canvas);
+
+    // 11. DIBUJAR NIEBLA DE GUERRA (FOG OF WAR)
+    _paintFogOfWar(canvas, map);
 
     canvas.restore();
 
-    // 10. DIBUJAR FLECHAS RADAR DE ENEMIGOS FUERA DE PANTALLA (ESPACIO DE PANTALLA)
+    // 12. DIBUJAR RADAR PERIMETRAL DE ENEMIGOS FUERA DE PANTALLA
     _paintOffscreenEnemyRadar(canvas, size);
   }
 
   void _paintTerrain(Canvas canvas, GameMapModel map) {
-    // Fondo base del mapa
     final bgPaint = Paint()..color = map.groundColor;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, map.worldWidth, map.worldHeight),
       bgPaint,
     );
 
-    // Patrón sutil de cuadrícula de baldosas
     final gridPaint = Paint()
       ..color = map.groundAccentColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
@@ -75,7 +79,6 @@ class BattlefieldPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(map.worldWidth, y), gridPaint);
     }
 
-    // Bordes del mapa
     final borderPaint = Paint()
       ..color = map.wallColor
       ..style = PaintingStyle.stroke
@@ -90,14 +93,12 @@ class BattlefieldPainter extends CustomPainter {
     final centerX = map.worldWidth / 2;
     final centerY = map.worldHeight / 2;
 
-    // Plaza de adoquines central de la aldea
     final plazaPaint = Paint()
       ..color = map.pathColor.withValues(alpha: 0.7)
       ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(Offset(centerX, centerY), 220, plazaPaint);
+    canvas.drawCircle(Offset(centerX, centerY), 230, plazaPaint);
 
-    // Caminos que salen hacia los cuatro puntos cardinales
     final pathPaint = Paint()
       ..color = map.pathColor.withValues(alpha: 0.6)
       ..strokeWidth = 60.0
@@ -108,12 +109,11 @@ class BattlefieldPainter extends CustomPainter {
     canvas.drawLine(Offset(centerX, centerY), Offset(50, centerY), pathPaint);
     canvas.drawLine(Offset(centerX, centerY), Offset(map.worldWidth - 50, centerY), pathPaint);
 
-    // Círculo de empalizada / protección de la aldea
     final fencePaint = Paint()
       ..color = map.wallColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6.0;
-    canvas.drawCircle(Offset(centerX, centerY), 240, fencePaint);
+    canvas.drawCircle(Offset(centerX, centerY), 250, fencePaint);
   }
 
   void _paintObstacles(Canvas canvas, GameMapModel map) {
@@ -130,11 +130,6 @@ class BattlefieldPainter extends CustomPainter {
         canvas.drawCircle(obs.position, obs.radius, rockPaint);
         final rockHighlight = Paint()..color = const Color(0xFFADB5BD);
         canvas.drawCircle(obs.position - const Offset(4, 4), obs.radius * 0.6, rockHighlight);
-      } else if (obs.type == 'bonfire') {
-        final firePaint = Paint()..color = const Color(0xFFFF9F1C);
-        canvas.drawCircle(obs.position, obs.radius, firePaint);
-        final glow = Paint()..color = const Color(0xFFFF5400).withValues(alpha: 0.5);
-        canvas.drawCircle(obs.position, obs.radius * 1.5, glow);
       } else if (obs.type == 'lava') {
         final lavaPaint = Paint()..color = const Color(0xFFD00000);
         canvas.drawCircle(obs.position, obs.radius, lavaPaint);
@@ -144,8 +139,42 @@ class BattlefieldPainter extends CustomPainter {
     }
   }
 
+  void _paintRivalCamps(Canvas canvas) {
+    for (final camp in engine.rivalCamps) {
+      if (camp.isDestroyed) continue;
+
+      // Base del campamento rival
+      final basePaint = Paint()..color = const Color(0xFF6A040F);
+      canvas.drawCircle(camp.position, camp.radius, basePaint);
+
+      // Icono de fortaleza enemiga
+      _drawPixelSprite(
+        canvas,
+        PixelArtLibrary.orc,
+        camp.position - const Offset(27, 27),
+        pixelSize: 3.0,
+        tintColor: camp.hitFlashTimer > 0 ? Colors.redAccent : null,
+        tintIntensity: camp.hitFlashTimer > 0 ? 0.8 : 0.0,
+      );
+
+      // Barra de vida del campamento
+      _paintHealthBar(
+        canvas,
+        center: Offset(camp.position.dx, camp.position.dy - camp.radius - 12),
+        width: 80,
+        height: 7,
+        current: camp.health,
+        max: camp.maxHealth,
+        barColor: const Color(0xFFD00000),
+        label: camp.name,
+      );
+    }
+  }
+
   void _paintVillageBuildings(Canvas canvas) {
     for (final b in engine.villageBuildings) {
+      if (b.isDead) continue;
+
       PixelSpriteData sprite;
       double pixelScale = 3.0;
 
@@ -162,6 +191,14 @@ class BattlefieldPainter extends CustomPainter {
           sprite = PixelArtLibrary.cottage;
           pixelScale = 3.0;
           break;
+        case BuildingType.barricade:
+          sprite = PixelArtLibrary.watchtower;
+          pixelScale = 2.0;
+          break;
+        case BuildingType.goldMine:
+          sprite = PixelArtLibrary.cottage;
+          pixelScale = 2.6;
+          break;
       }
 
       final spriteW = sprite.width * pixelScale;
@@ -176,6 +213,12 @@ class BattlefieldPainter extends CustomPainter {
         tintColor: b.hitFlashTimer > 0 ? Colors.red : null,
         tintIntensity: b.hitFlashTimer > 0 ? 0.7 : 0.0,
       );
+
+      // Si es una mina de oro, dibujar icono de moneda sobre ella
+      if (b.type == BuildingType.goldMine) {
+        final coinPaint = Paint()..color = const Color(0xFFFFD166);
+        canvas.drawCircle(b.position - const Offset(0, 18), 8, coinPaint);
+      }
 
       // Barra de vida del edificio
       _paintHealthBar(
@@ -211,7 +254,6 @@ class BattlefieldPainter extends CustomPainter {
         tintIntensity: enemy.hitFlashTimer > 0 ? 0.75 : 0.0,
       );
 
-      // Barra de vida del enemigo
       _paintHealthBar(
         canvas,
         center: Offset(enemy.position.dx, drawPos.dy - 8),
@@ -257,7 +299,6 @@ class BattlefieldPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(player.position + aimDir * 28, 6.0, indicatorPaint);
 
-    // Barra de salud sobre el jugador
     _paintHealthBar(
       canvas,
       center: Offset(player.position.dx, drawPos.dy - 10),
@@ -266,7 +307,7 @@ class BattlefieldPainter extends CustomPainter {
       current: player.health,
       max: player.maxHealth,
       barColor: const Color(0xFF55A630),
-      label: player.playerClass.name,
+      label: 'Nvl ${player.level} ${player.playerClass.name}',
     );
   }
 
@@ -275,7 +316,6 @@ class BattlefieldPainter extends CustomPainter {
       final paint = Paint()..color = p.color;
       canvas.drawCircle(p.position, p.radius, paint);
 
-      // Estela luminosa
       final trailPaint = Paint()
         ..color = p.color.withValues(alpha: 0.4)
         ..strokeWidth = p.radius * 1.5;
@@ -316,6 +356,26 @@ class BattlefieldPainter extends CustomPainter {
     }
   }
 
+  void _paintFogOfWar(Canvas canvas, GameMapModel map) {
+    final fogPaint = Paint()..color = Colors.black.withValues(alpha: 0.70);
+
+    for (int r = 0; r < engine.fogRows; r++) {
+      for (int c = 0; c < engine.fogCols; c++) {
+        if (!engine.fogExplored[r][c]) {
+          canvas.drawRect(
+            Rect.fromLTWH(
+              c * GameEngine.fogTileSize,
+              r * GameEngine.fogTileSize,
+              GameEngine.fogTileSize + 1.0,
+              GameEngine.fogTileSize + 1.0,
+            ),
+            fogPaint,
+          );
+        }
+      }
+    }
+  }
+
   void _paintOffscreenEnemyRadar(Canvas canvas, Size size) {
     if (size.width <= 50.0 || size.height <= 50.0) return;
 
@@ -333,7 +393,6 @@ class BattlefieldPainter extends CustomPainter {
     for (final enemy in engine.enemies) {
       if (viewportRect.contains(enemy.position)) continue;
 
-      // Calcular punto de intersección en el borde de la pantalla
       final centerScreen = Offset(size.width / 2, size.height / 2);
       final enemyInScreen = enemy.position - engine.cameraOffset;
       final diff = enemyInScreen - centerScreen;
@@ -352,7 +411,6 @@ class BattlefieldPainter extends CustomPainter {
 
       final point = Offset(edgeX, edgeY);
 
-      // Dibujar triángulo puntero hacia el enemigo
       canvas.save();
       canvas.translate(point.dx, point.dy);
       canvas.rotate(angle);
@@ -380,14 +438,12 @@ class BattlefieldPainter extends CustomPainter {
     final left = center.dx - width / 2;
     final top = center.dy - height / 2;
 
-    // Fondo oscuro
     final bgPaint = Paint()..color = const Color(0xFF141419);
     canvas.drawRRect(
       RRect.fromRectAndRadius(Rect.fromLTWH(left - 1, top - 1, width + 2, height + 2), const Radius.circular(3)),
       bgPaint,
     );
 
-    // Barra de relleno proporcional
     final pct = (current / max).clamp(0.0, 1.0);
     final fillPaint = Paint()..color = barColor;
     canvas.drawRRect(
@@ -395,7 +451,6 @@ class BattlefieldPainter extends CustomPainter {
       fillPaint,
     );
 
-    // Etiqueta de texto si existe
     if (label != null) {
       final textSpan = TextSpan(
         text: label,
