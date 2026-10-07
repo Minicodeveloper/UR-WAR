@@ -8,6 +8,7 @@ import '../game/models/player_class.dart';
 import '../game/widgets/game_hud.dart';
 import '../game/widgets/game_over_dialog.dart';
 import '../game/widgets/village_shop_dialog.dart';
+import '../game/widgets/virtual_joystick.dart';
 
 class VillageDefenseScreen extends StatefulWidget {
   final GameMapModel mapModel;
@@ -29,8 +30,10 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
   late Ticker _ticker;
   Duration _lastElapsed = Duration.zero;
 
-  // Entrada de movimiento (combina joystick táctil y teclado físico)
+  // Entrada de movimiento multicanal (Joystick en pantalla, arrastre táctil y teclado físico)
   Offset _joystickDirection = Offset.zero;
+  Offset _dragDirection = Offset.zero;
+  Offset? _dragStartPos;
   final Set<LogicalKeyboardKey> _pressedKeys = {};
   final FocusNode _focusNode = FocusNode();
 
@@ -56,9 +59,16 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
     // Limitar delta time para evitar saltos si hay pausas o pérdidas de foco
     final clampedDt = dt.clamp(0.001, 0.05);
 
-    // Calcular dirección efectiva combinando teclado y joystick
+    // Calcular dirección efectiva combinando teclado, joystick táctil y arrastre en pantalla
     final keyboardDir = _calculateKeyboardDirection();
-    final effectiveDir = keyboardDir != Offset.zero ? keyboardDir : _joystickDirection;
+    Offset effectiveDir = Offset.zero;
+    if (keyboardDir != Offset.zero) {
+      effectiveDir = keyboardDir;
+    } else if (_joystickDirection != Offset.zero) {
+      effectiveDir = _joystickDirection;
+    } else if (_dragDirection != Offset.zero) {
+      effectiveDir = _dragDirection;
+    }
 
     _engine.movePlayer(effectiveDir, clampedDt);
     _engine.update(clampedDt);
@@ -132,6 +142,8 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
       );
       _pressedKeys.clear();
       _joystickDirection = Offset.zero;
+      _dragDirection = Offset.zero;
+      _dragStartPos = null;
     });
   }
 
@@ -152,62 +164,106 @@ class _VillageDefenseScreenState extends State<VillageDefenseScreen>
         backgroundColor: Colors.black,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            _engine.setViewportSize(Size(constraints.maxWidth, constraints.maxHeight));
+            final screenWidth = constraints.maxWidth;
+            final screenHeight = constraints.maxHeight;
+            _engine.setViewportSize(Size(screenWidth, screenHeight));
 
             return SizedBox(
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
+              width: screenWidth,
+              height: screenHeight,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                // 1. Lienzo gráfico del campo de batalla
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapDown: (details) {
-                      final worldPos = details.localPosition + _engine.cameraOffset;
-                      _engine.setTargetDestination(worldPos);
-                    },
+                  // 1. Lienzo gráfico del campo de batalla
+                  Positioned.fill(
                     child: CustomPaint(
                       painter: BattlefieldPainter(engine: _engine),
                     ),
                   ),
-                ),
 
-                // 2. HUD y controles táctiles
-                Positioned.fill(
-                  child: GameHUD(
-                    engine: _engine,
-                    onJoystickDirection: (dir) {
-                      _joystickDirection = dir;
+                  // 2. Capa de control táctil de pantalla completa (Tap-to-Move y Arrastre libre con el dedo)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapDown: (details) {
+                        final worldPos = details.localPosition + _engine.cameraOffset;
+                        _engine.setTargetDestination(worldPos);
+                      },
+                      onPanStart: (details) {
+                        // Permitir arrastre táctil si no está sobre el cluster de botones de acción en la esquina inferior derecha
+                        final inActionZone = details.localPosition.dx > screenWidth * 0.70 &&
+                            details.localPosition.dy > screenHeight * 0.60;
+                        if (!inActionZone) {
+                          _dragStartPos = details.localPosition;
+                          _engine.clearTargetDestination();
+                        }
+                      },
+                      onPanUpdate: (details) {
+                        if (_dragStartPos != null) {
+                          final delta = details.localPosition - _dragStartPos!;
+                          if (delta.distance > 8.0) {
+                            _dragDirection = delta / delta.distance;
+                          }
+                        }
+                      },
+                      onPanEnd: (_) {
+                        _dragStartPos = null;
+                        _dragDirection = Offset.zero;
+                      },
+                      onPanCancel: () {
+                        _dragStartPos = null;
+                        _dragDirection = Offset.zero;
+                      },
+                    ),
+                  ),
+
+                  // 3. HUD (Barra de estado superior de Héroe/Aldea y Botones de acción a la derecha)
+                  Positioned.fill(
+                    child: GameHUD(
+                      engine: _engine,
+                    ),
+                  ),
+
+                  // 4. JOYSTICK VIRTUAL TÁCTIL INDEPENDIENTE (Siempre visible e inamovible en la esquina inferior izquierda)
+                  Positioned(
+                    left: 16,
+                    bottom: 20,
+                    child: SafeArea(
+                      top: false,
+                      right: false,
+                      child: VirtualJoystick(
+                        radius: 48.0,
+                        onDirectionChanged: (dir) {
+                          _joystickDirection = dir;
+                        },
+                      ),
+                    ),
+                  ),
+
+                  // 5. Modal de Victoria / Derrota
+                  AnimatedBuilder(
+                    animation: _engine,
+                    builder: (context, _) {
+                      if (_engine.isGameOver || _engine.isVictory) {
+                        return Positioned.fill(
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.75),
+                            child: GameOverDialog(
+                              engine: _engine,
+                              onRestart: _restartGame,
+                              onExit: () => Navigator.pop(context),
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
                     },
                   ),
-                ),
-
-                // 3. Modal de Victoria / Derrota
-                AnimatedBuilder(
-                  animation: _engine,
-                  builder: (context, _) {
-                    if (_engine.isGameOver || _engine.isVictory) {
-                      return Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          child: GameOverDialog(
-                            engine: _engine,
-                            onRestart: _restartGame,
-                            onExit: () => Navigator.pop(context),
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -3,16 +3,15 @@ import '../graphics/pixel_sprite_painter.dart';
 import '../logic/game_engine.dart';
 import '../models/player_class.dart';
 import 'village_shop_dialog.dart';
-import 'virtual_joystick.dart';
 
 class GameHUD extends StatelessWidget {
   final GameEngine engine;
-  final ValueChanged<Offset> onJoystickDirection;
+  final ValueChanged<Offset>? onJoystickDirection;
 
   const GameHUD({
     super.key,
     required this.engine,
-    required this.onJoystickDirection,
+    this.onJoystickDirection,
   });
 
   @override
@@ -111,24 +110,7 @@ class GameHUD extends StatelessWidget {
                   ),
                 ),
 
-                // ==========================================
-                // 2. CONTROLES TÁCTILES: ZONA DINÁMICA DEL JOYSTICK A LA IZQUIERDA
-                // ==========================================
-                Positioned(
-                  left: 0,
-                  top: isPortrait ? 130 : 75,
-                  bottom: 0,
-                  width: isPortrait ? constraints.maxWidth * 0.55 : constraints.maxWidth * 0.50,
-                  child: VirtualJoystick(
-                    radius: isSmallScreen ? 48 : 55,
-                    onDirectionChanged: onJoystickDirection,
-                    onTapField: (localPos) {
-                      final topOffset = isPortrait ? 130.0 : 75.0;
-                      final worldPos = Offset(localPos.dx, topOffset + localPos.dy) + engine.cameraOffset;
-                      engine.setTargetDestination(worldPos);
-                    },
-                  ),
-                ),
+
 
                 // ==========================================
                 // 3. BOTONES DE ACCIÓN A LA DERECHA (ARCADE CLUSTER)

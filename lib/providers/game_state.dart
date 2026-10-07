@@ -161,4 +161,20 @@ class GameState extends ChangeNotifier {
       }
     }
   }
+
+  void moveInDirection(int dx, int dy) {
+    if (isGameOver) return;
+    if (selectedRobotId == null) {
+      final playerRobot = robots.where((r) => r.id.startsWith('p') && r.hp > 0).firstOrNull;
+      if (playerRobot != null) {
+        selectedRobotId = playerRobot.id;
+      }
+    }
+    if (selectedRobotId != null) {
+      final selectedRobot = robots.firstWhere((r) => r.id == selectedRobotId);
+      final targetX = (selectedRobot.x + dx).clamp(0, boardSize - 1);
+      final targetY = (selectedRobot.y + dy).clamp(0, boardSize - 1);
+      onCellTapped(targetX, targetY);
+    }
+  }
 }

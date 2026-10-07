@@ -7,6 +7,9 @@ import 'package:ur_war/game/models/entity.dart';
 import 'package:ur_war/game/widgets/game_hud.dart';
 import 'package:ur_war/game/widgets/virtual_joystick.dart';
 import 'package:ur_war/providers/game_state.dart';
+import 'package:ur_war/screens/game_screen.dart';
+import 'package:ur_war/screens/village_defense_screen.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   group('Village Defense RPG & Exploration Tests', () {
@@ -149,7 +152,7 @@ void main() {
       );
 
       expect(find.byType(GameHUD), findsOneWidget);
-      expect(find.byType(VirtualJoystick), findsOneWidget);
+      expect(find.text('Nvl 1 '), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -187,6 +190,60 @@ void main() {
           ),
         ),
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('VillageDefenseScreen renders standalone VirtualJoystick and full-screen touch layer', (tester) async {
+      final map = GameMapModel.availableMaps.first;
+      final pClass = PlayerClass.availableClasses.first;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: VillageDefenseScreen(
+            mapModel: map,
+            playerClass: pClass,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verificar que tanto GameHUD como el VirtualJoystick independiente están presentes y visibles
+      expect(find.byType(GameHUD), findsOneWidget);
+      expect(find.byType(VirtualJoystick), findsOneWidget);
+      expect(find.text('JOYSTICK'), findsOneWidget);
+
+      // Simular arrastre en pantalla en la zona izquierda del lienzo
+      final gesture = await tester.startGesture(const Offset(150, 300));
+      await gesture.moveBy(const Offset(30, -30));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('GameScreen tactical arena supports directional buttons and touch interaction', (tester) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (_) => GameState(),
+          child: const MaterialApp(
+            home: GameScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verificar que los botones direccionales existen
+      expect(find.byIcon(Icons.arrow_left_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_right_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_drop_up_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_drop_down_rounded), findsOneWidget);
+
+      // Tocar botón de movimiento a la derecha
+      await tester.tap(find.byIcon(Icons.arrow_right_rounded));
+      await tester.pumpAndSettle();
+
       expect(tester.takeException(), isNull);
     });
   });

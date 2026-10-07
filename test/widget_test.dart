@@ -43,7 +43,7 @@ void main() {
 
     final vjRect = tester.getRect(find.byType(VirtualJoystick));
     expect(vjRect.width, greaterThan(150.0));
-    expect(vjRect.height, greaterThan(300.0));
+    expect(vjRect.height, greaterThan(150.0));
 
     final modeToggleFinder = find.byIcon(Icons.control_camera_rounded);
     expect(modeToggleFinder, findsOneWidget);
