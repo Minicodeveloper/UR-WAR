@@ -3,637 +3,1072 @@ import 'package:flutter/material.dart';
 import '../logic/game_engine.dart';
 import '../models/entity.dart';
 import '../models/game_map.dart';
+import '../models/npc_model.dart';
+import '../models/player_class.dart';
 import 'pixel_art_data.dart';
 import 'pixel_sprite_painter.dart';
+import 'sprite_animation.dart';
 
+/// World rendering is culled to the camera and sorted by the feet of each actor.
+/// HUD and controls are separate widgets, so world labels stay deliberately short.
 class BattlefieldPainter extends CustomPainter {
   final GameEngine engine;
-
   BattlefieldPainter({required this.engine}) : super(repaint: engine);
+  Rect get view => Rect.fromLTWH(
+    engine.cameraOffset.dx,
+    engine.cameraOffset.dy,
+    engine.viewportSize.width,
+    engine.viewportSize.height,
+  ).inflate(120);
+  bool visible(Offset p) => view.contains(p);
+  static final _snowTree = SpriteAnimation.recolor(PixelArtLibrary.forestTree, {
+    'g': const Color(0xFFA7CBC8),
+    'G': const Color(0xFFDCEEE4),
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-
-    // Aplicar transformación de cámara
+    canvas.clipRect(Offset.zero & size);
     canvas.translate(-engine.cameraOffset.dx, -engine.cameraOffset.dy);
-
-    final map = engine.map;
-
-    // 1. DIBUJAR TERRENO Y BIOMA
-    _paintTerrain(canvas, map);
-
-    // 2. DIBUJAR CAMINOS Y ALDEA
-    _paintVillageGround(canvas, map);
-
-    // 3. DIBUJAR OBSTÁCULOS AMBIENTALES
-    _paintObstacles(canvas, map);
-
-    // 4. DIBUJAR CAMPAMENTOS RIVALES
-    _paintRivalCamps(canvas);
-
-    // 5. DIBUJAR EDIFICIOS DE LA ALDEA Y CONSTRUCCIONES
-    _paintVillageBuildings(canvas);
-
-    // 5.5 DIBUJAR NPCS ISEKAI
-    _paintNpcs(canvas);
-
-    // 6. DIBUJAR ENEMIGOS
-    _paintEnemies(canvas);
-
-    // 7. DIBUJAR JUGADOR Y DESTINO TÁCTIL
-    _paintTargetDestination(canvas);
-    _paintPlayer(canvas);
-
-    // 8. DIBUJAR PROYECTILES
-    _paintProjectiles(canvas);
-
-    // 9. DIBUJAR PARTÍCULAS
-    _paintParticles(canvas);
-
-    // 10. DIBUJAR TEXTOS FLOTANTES
-    _paintFloatingTexts(canvas);
-
-    // 11. DIBUJAR NIEBLA DE GUERRA (FOG OF WAR)
-    _paintFogOfWar(canvas, map);
-
+    _terrain(canvas);
+    _paths(canvas);
+    _hazards(canvas);
+    _objective(canvas);
+    _destination(canvas);
+    final objects = <(double, VoidCallback)>[];
+    for (final o in engine.map.obstacles) {
+      if (visible(o.position)) {
+        objects.add((o.position.dy, () => _obstacle(canvas, o)));
+      }
+    }
+    for (final c in engine.rivalCamps) {
+      if (visible(c.position)) {
+        objects.add((c.position.dy, () => _camp(canvas, c)));
+      }
+    }
+    for (final b in engine.villageBuildings) {
+      if (visible(b.position)) {
+        objects.add((b.position.dy, () => _building(canvas, b)));
+      }
+    }
+    for (final n in engine.npcs) {
+      if (visible(n.position)) {
+        objects.add((n.position.dy, () => _npc(canvas, n)));
+      }
+    }
+    for (final e in engine.enemies) {
+      if (!e.isDead && visible(e.position)) {
+        objects.add((e.position.dy, () => _enemy(canvas, e)));
+      }
+    }
+    for (final c in engine.corpses) {
+      if (visible(c.position)) {
+        objects.add((c.position.dy, () => _corpse(canvas, c)));
+      }
+    }
+    objects.add((engine.player.position.dy, () => _player(canvas)));
+    objects.sort((a, b) => a.$1.compareTo(b.$1));
+    for (final object in objects) {
+      object.$2();
+    }
+    _projectiles(canvas);
+    for (final p in engine.particles) {
+      if (!visible(p.position)) continue;
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: p.position,
+          width: p.radius * 2,
+          height: p.radius * 2,
+        ),
+        Paint()..color = p.color.withValues(alpha: p.opacity),
+      );
+    }
+    _fog(canvas);
+    _placement(canvas);
+    // Keep only recent feedback; dozens of stacked labels obscure the action.
+    for (final ft in engine.floatingTexts.skip(
+      max(0, engine.floatingTexts.length - 16),
+    )) {
+      if (visible(ft.position)) {
+        _label(
+          canvas,
+          ft.text,
+          ft.position,
+          ft.color.withValues(alpha: ft.opacity),
+          size: ft.fontSize.clamp(10, 14),
+          background: false,
+        );
+      }
+    }
     canvas.restore();
-
-    // 12. DIBUJAR RADAR PERIMETRAL DE ENEMIGOS FUERA DE PANTALLA
-    _paintOffscreenEnemyRadar(canvas, size);
+    _radar(canvas, size);
   }
 
-  void _paintTerrain(Canvas canvas, GameMapModel map) {
-    final bgPaint = Paint()..color = map.groundColor;
+  void _terrain(Canvas canvas) {
+    final map = engine.map;
+    final snow = map.biome == MapBiomeType.snow;
+    final lava = map.biome == MapBiomeType.lava;
+    final ground = snow
+        ? const Color(0xFF596967)
+        : lava
+        ? const Color(0xFF302A28)
+        : const Color(0xFF303A2E);
     canvas.drawRect(
       Rect.fromLTWH(0, 0, map.worldWidth, map.worldHeight),
-      bgPaint,
+      Paint()..color = ground,
     );
-
-    final gridPaint = Paint()
-      ..color = map.groundAccentColor.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    const tileSize = 60.0;
-    for (double x = 0; x < map.worldWidth; x += tileSize) {
-      canvas.drawLine(Offset(x, 0), Offset(x, map.worldHeight), gridPaint);
-    }
-    for (double y = 0; y < map.worldHeight; y += tileSize) {
-      canvas.drawLine(Offset(0, y), Offset(map.worldWidth, y), gridPaint);
-    }
-
-    final borderPaint = Paint()
-      ..color = map.wallColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 12.0;
-    canvas.drawRect(
-      Rect.fromLTWH(6, 6, map.worldWidth - 12, map.worldHeight - 12),
-      borderPaint,
-    );
-  }
-
-  void _paintVillageGround(Canvas canvas, GameMapModel map) {
-    final centerX = map.worldWidth / 2;
-    final centerY = map.worldHeight / 2;
-
-    final plazaPaint = Paint()
-      ..color = map.pathColor.withValues(alpha: 0.7)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(centerX, centerY), 230, plazaPaint);
-
-    final pathPaint = Paint()
-      ..color = map.pathColor.withValues(alpha: 0.6)
-      ..strokeWidth = 60.0
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(Offset(centerX, centerY), Offset(centerX, 50), pathPaint);
-    canvas.drawLine(Offset(centerX, centerY), Offset(centerX, map.worldHeight - 50), pathPaint);
-    canvas.drawLine(Offset(centerX, centerY), Offset(50, centerY), pathPaint);
-    canvas.drawLine(Offset(centerX, centerY), Offset(map.worldWidth - 50, centerY), pathPaint);
-
-    final fencePaint = Paint()
-      ..color = map.wallColor.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0;
-    canvas.drawCircle(Offset(centerX, centerY), 250, fencePaint);
-  }
-
-  void _paintObstacles(Canvas canvas, GameMapModel map) {
-    for (final obs in map.obstacles) {
-      if (obs.type == 'tree') {
-        _drawPixelSprite(
-          canvas,
-          PixelArtLibrary.forestTree,
-          obs.position - const Offset(24, 30),
-          pixelSize: 3.0,
+    const tile = 74.0;
+    for (
+      var y = max(0, (view.top / tile).floor());
+      y < min((map.worldHeight / tile).ceil(), (view.bottom / tile).ceil());
+      y++
+    ) {
+      for (
+        var x = max(0, (view.left / tile).floor());
+        x < min((map.worldWidth / tile).ceil(), (view.right / tile).ceil());
+        x++
+      ) {
+        final seed = ((x * 73856093) ^ (y * 19349663)).abs();
+        final p = Offset(x * tile + (seed % 21), y * tile + ((seed >> 4) % 21));
+        final patch = Rect.fromCenter(center: p, width: 110, height: 85);
+        canvas.drawOval(
+          patch,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [
+                (snow
+                        ? const Color(0xFFC6CEC1)
+                        : lava
+                        ? const Color(0xFF534036)
+                        : const Color(0xFF68714B))
+                    .withValues(alpha: .2),
+                Colors.transparent,
+              ],
+            ).createShader(patch),
         );
-      } else if (obs.type == 'rock') {
-        final rockPaint = Paint()..color = const Color(0xFF6C757D);
-        canvas.drawCircle(obs.position, obs.radius, rockPaint);
-        final rockHighlight = Paint()..color = const Color(0xFFADB5BD);
-        canvas.drawCircle(obs.position - const Offset(4, 4), obs.radius * 0.6, rockHighlight);
-      } else if (obs.type == 'lava') {
-        final lavaPaint = Paint()..color = const Color(0xFFD00000);
-        canvas.drawCircle(obs.position, obs.radius, lavaPaint);
-        final lavaCore = Paint()..color = const Color(0xFFFFBA08);
-        canvas.drawCircle(obs.position, obs.radius * 0.5, lavaCore);
-      }
-    }
-  }
-
-  void _paintRivalCamps(Canvas canvas) {
-    for (final camp in engine.rivalCamps) {
-      if (camp.isDestroyed) continue;
-
-      // 1. Plaza central y foso del bastión rival
-      final moatPaint = Paint()..color = const Color(0xFF370617);
-      canvas.drawCircle(camp.position, camp.radius + 20, moatPaint);
-
-      final plazaPaint = Paint()..color = const Color(0xFF6A040F);
-      canvas.drawCircle(camp.position, camp.radius + 8, plazaPaint);
-
-      // 2. Empalizada / Muralla de estacas protectoras alrededor del pueblo rival
-      final wallPaint = Paint()
-        ..color = const Color(0xFF9D0208)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6.0;
-      canvas.drawCircle(camp.position, camp.radius + 10, wallPaint);
-
-      // 3. Estacas defensivas en el perímetro del pueblo rival (4 esquinas)
-      final stakePaint = Paint()..color = const Color(0xFFD00000);
-      for (int i = 0; i < 6; i++) {
-        final angle = (i * 60) * pi / 180;
-        final stakePos = camp.position + Offset(cos(angle), sin(angle)) * (camp.radius + 12);
-        canvas.drawCircle(stakePos, 4, stakePaint);
-      }
-
-      // 4. Edificios secundaio / Chozas del poblado rival (flancos)
-      _drawPixelSprite(
-        canvas,
-        PixelArtLibrary.knightIdle,
-        camp.position + const Offset(-45, -20),
-        pixelSize: 1.6,
-      );
-      _drawPixelSprite(
-        canvas,
-        PixelArtLibrary.orc,
-        camp.position + const Offset(25, -25),
-        pixelSize: 1.6,
-      );
-      _drawPixelSprite(
-        canvas,
-        PixelArtLibrary.skeleton,
-        camp.position + const Offset(-20, 25),
-        pixelSize: 1.6,
-      );
-
-      // 5. Fortificación Central del Bastión (Gran Trono / Bastión Principal)
-      _drawPixelSprite(
-        canvas,
-        PixelArtLibrary.bossTitan,
-        camp.position - const Offset(32, 36),
-        pixelSize: 2.2,
-        tintColor: camp.hitFlashTimer > 0 ? Colors.redAccent : null,
-        tintIntensity: camp.hitFlashTimer > 0 ? 0.8 : 0.0,
-      );
-
-      // 6. Barra de Vida y Título de la Ciudadela Rival
-      _paintHealthBar(
-        canvas,
-        center: Offset(camp.position.dx, camp.position.dy - camp.radius - 22),
-        width: 100,
-        height: 8,
-        current: camp.health,
-        max: camp.maxHealth,
-        barColor: const Color(0xFFD00000),
-        label: '🏰 BASTIÓN FORTIFICADO: ${camp.name.toUpperCase()}',
-      );
-    }
-  }
-
-  void _paintVillageBuildings(Canvas canvas) {
-    for (final b in engine.villageBuildings) {
-      if (b.isDead) continue;
-
-      PixelSpriteData sprite;
-      double pixelScale = 3.0;
-
-      switch (b.type) {
-        case BuildingType.townHall:
-          sprite = PixelArtLibrary.townHall;
-          pixelScale = 3.6;
-          break;
-        case BuildingType.watchtower:
-          sprite = PixelArtLibrary.watchtower;
-          pixelScale = 3.0;
-          break;
-        case BuildingType.cottage:
-          sprite = PixelArtLibrary.cottage;
-          pixelScale = 3.0;
-          break;
-        case BuildingType.barricade:
-          sprite = PixelArtLibrary.watchtower;
-          pixelScale = 2.0;
-          break;
-        case BuildingType.goldMine:
-          sprite = PixelArtLibrary.cottage;
-          pixelScale = 2.6;
-          break;
-      }
-
-      final spriteW = sprite.width * pixelScale;
-      final spriteH = sprite.height * pixelScale;
-      final drawPos = b.position - Offset(spriteW / 2, spriteH / 2);
-
-      _drawPixelSprite(
-        canvas,
-        sprite,
-        drawPos,
-        pixelSize: pixelScale,
-        tintColor: b.hitFlashTimer > 0 ? Colors.red : null,
-        tintIntensity: b.hitFlashTimer > 0 ? 0.7 : 0.0,
-      );
-
-      // Si es una mina de oro, dibujar icono de moneda sobre ella
-      if (b.type == BuildingType.goldMine) {
-        final coinPaint = Paint()..color = const Color(0xFFFFD166);
-        canvas.drawCircle(b.position - const Offset(0, 18), 8, coinPaint);
-      }
-
-      // Barra de vida del edificio
-      _paintHealthBar(
-        canvas,
-        center: Offset(b.position.dx, drawPos.dy - 10),
-        width: b.type == BuildingType.townHall ? 90 : 50,
-        height: b.type == BuildingType.townHall ? 8 : 5,
-        current: b.health,
-        max: b.maxHealth,
-        barColor: b.type == BuildingType.townHall ? const Color(0xFF00BBF9) : const Color(0xFF55A630),
-        label: b.type == BuildingType.townHall ? 'SALÓN COMUNAL' : null,
-      );
-    }
-  }
-
-  void _paintEnemies(Canvas canvas) {
-    for (final enemy in engine.enemies) {
-      final config = enemy.config;
-      final pixelScale = config.isBoss ? 4.0 : 3.0;
-      final spriteW = config.sprite.width * pixelScale;
-      final spriteH = config.sprite.height * pixelScale;
-
-      final bobbing = sin(enemy.walkPhase) * 3.0;
-      final drawPos = enemy.position - Offset(spriteW / 2, spriteH / 2 + bobbing);
-
-      _drawPixelSprite(
-        canvas,
-        config.sprite,
-        drawPos,
-        pixelSize: pixelScale,
-        flipX: enemy.facingLeft,
-        tintColor: enemy.hitFlashTimer > 0 ? Colors.redAccent : null,
-        tintIntensity: enemy.hitFlashTimer > 0 ? 0.75 : 0.0,
-      );
-
-      _paintHealthBar(
-        canvas,
-        center: Offset(enemy.position.dx, drawPos.dy - 8),
-        width: config.isBoss ? 80 : 32,
-        height: config.isBoss ? 7 : 4,
-        current: enemy.health,
-        max: config.maxHealth,
-        barColor: config.healthBarColor,
-        label: config.isBoss ? config.name : null,
-      );
-    }
-  }
-
-  void _paintPlayer(Canvas canvas) {
-    final player = engine.player;
-    const pixelScale = 3.2;
-
-    final sprite = player.attackAnimTimer > 0
-        ? player.playerClass.spriteAttack
-        : player.playerClass.spriteIdle;
-
-    final spriteW = sprite.width * pixelScale;
-    final spriteH = sprite.height * pixelScale;
-
-    final bobbing = player.isMoving ? sin(player.walkPhase) * 3.5 : 0.0;
-    final drawPos = player.position - Offset(spriteW / 2, spriteH / 2 + bobbing);
-
-    _drawPixelSprite(
-      canvas,
-      sprite,
-      drawPos,
-      pixelSize: pixelScale,
-      flipX: player.facingLeft,
-      tintColor: player.hitFlashTimer > 0 ? Colors.redAccent : null,
-      tintIntensity: player.hitFlashTimer > 0 ? 0.75 : 0.0,
-    );
-
-    // Indicador sutil de aura / mira
-    final aimDir = player.facingLeft ? const Offset(-1, 0) : const Offset(1, 0);
-    final indicatorPaint = Paint()
-      ..color = player.playerClass.themeColor.withValues(alpha: 0.4)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-    canvas.drawCircle(player.position + aimDir * 28, 6.0, indicatorPaint);
-
-    _paintHealthBar(
-      canvas,
-      center: Offset(player.position.dx, drawPos.dy - 10),
-      width: 44,
-      height: 5,
-      current: player.health,
-      max: player.maxHealth,
-      barColor: const Color(0xFF55A630),
-      label: 'Nvl ${player.level} ${player.playerClass.name}',
-    );
-  }
-
-  void _paintTargetDestination(Canvas canvas) {
-    final dest = engine.player.targetDestination;
-    if (dest == null) return;
-
-    final pulse = (DateTime.now().millisecondsSinceEpoch % 1200) / 1200.0;
-    final radius = 10.0 + pulse * 14.0;
-    final alpha = (1.0 - pulse).clamp(0.0, 1.0);
-
-    final ringPaint = Paint()
-      ..color = const Color(0xFFFFD166).withValues(alpha: alpha * 0.85)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(dest, radius, ringPaint);
-
-    final dotPaint = Paint()
-      ..color = const Color(0xFFFFD166)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(dest, 4.5, dotPaint);
-
-    final linePaint = Paint()
-      ..color = const Color(0xFFFFD166).withValues(alpha: 0.25)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(engine.player.position, dest, linePaint);
-  }
-
-  void _paintProjectiles(Canvas canvas) {
-    for (final p in engine.projectiles) {
-      final paint = Paint()..color = p.color;
-      canvas.drawCircle(p.position, p.radius, paint);
-
-      final trailPaint = Paint()
-        ..color = p.color.withValues(alpha: 0.4)
-        ..strokeWidth = p.radius * 1.5;
-      final trailEnd = p.position - (p.velocity / p.velocity.distance) * (p.radius * 3);
-      canvas.drawLine(p.position, trailEnd, trailPaint);
-    }
-  }
-
-  void _paintParticles(Canvas canvas) {
-    for (final p in engine.particles) {
-      final paint = Paint()..color = p.color.withValues(alpha: p.opacity);
-      canvas.drawCircle(p.position, p.radius, paint);
-    }
-  }
-
-  void _paintFloatingTexts(Canvas canvas) {
-    for (final ft in engine.floatingTexts) {
-      final textSpan = TextSpan(
-        text: ft.text,
-        style: TextStyle(
-          color: ft.color.withValues(alpha: ft.opacity),
-          fontSize: ft.fontSize,
-          fontWeight: FontWeight.w900,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: ft.opacity),
-              blurRadius: 4,
-              offset: const Offset(1, 1),
-            ),
-          ],
-        ),
-      );
-      final tp = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, ft.position - Offset(tp.width / 2, tp.height / 2));
-    }
-  }
-
-  void _paintFogOfWar(Canvas canvas, GameMapModel map) {
-    final fogPaint = Paint()..color = Colors.black.withValues(alpha: 0.70);
-
-    // Culling para móviles: solo iterar celdas visibles dentro del viewport
-    final minCol = (engine.cameraOffset.dx / GameEngine.fogTileSize).floor().clamp(0, engine.fogCols - 1);
-    final maxCol = ((engine.cameraOffset.dx + engine.viewportSize.width) / GameEngine.fogTileSize).ceil().clamp(0, engine.fogCols - 1);
-    final minRow = (engine.cameraOffset.dy / GameEngine.fogTileSize).floor().clamp(0, engine.fogRows - 1);
-    final maxRow = ((engine.cameraOffset.dy + engine.viewportSize.height) / GameEngine.fogTileSize).ceil().clamp(0, engine.fogRows - 1);
-
-    for (int r = minRow; r <= maxRow; r++) {
-      for (int c = minCol; c <= maxCol; c++) {
-        if (!engine.fogExplored[r][c]) {
-          canvas.drawRect(
-            Rect.fromLTWH(
-              c * GameEngine.fogTileSize,
-              r * GameEngine.fogTileSize,
-              GameEngine.fogTileSize + 1.0,
-              GameEngine.fogTileSize + 1.0,
-            ),
-            fogPaint,
+        for (var i = 0; i < 7; i++) {
+          final d =
+              p +
+              Offset(
+                ((seed >> (i * 2)) % 61).toDouble(),
+                ((seed >> (i * 3)) % 57).toDouble(),
+              );
+          if (snow) {
+            canvas.drawOval(
+              Rect.fromCenter(center: d, width: 12, height: 3),
+              Paint()..color = const Color(0x26D4DDD3),
+            );
+          } else if (lava) {
+            canvas.drawLine(
+              d,
+              d + const Offset(9, -4),
+              Paint()
+                ..color = const Color(0x40584B3F)
+                ..strokeWidth = 1,
+            );
+          } else {
+            canvas.drawPath(
+              Path()
+                ..moveTo(d.dx - 2, d.dy + 3)
+                ..quadraticBezierTo(d.dx + 1, d.dy - 7, d.dx + 5, d.dy - 6),
+              Paint()
+                ..color = const Color(0x456D7657)
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = .8,
+            );
+          }
+        }
+        if (seed % 8 == 0) {
+          canvas.drawOval(
+            Rect.fromCenter(center: p, width: 25, height: 11),
+            Paint()..color = Colors.black.withValues(alpha: .16),
           );
+          for (var i = 0; i < 3; i++) {
+            canvas.drawOval(
+              Rect.fromCenter(
+                center: p + Offset(i * 5 - 5, i % 2 * 3),
+                width: 8,
+                height: 5,
+              ),
+              Paint()
+                ..color = snow
+                    ? const Color(0xFF83928A)
+                    : const Color(0xFF555B48),
+            );
+          }
         }
       }
     }
+    // Battle-worn perimeter: weathered boundary stones and war standards.
+    canvas.drawRect(
+      Rect.fromLTWH(5, 5, map.worldWidth - 10, map.worldHeight - 10),
+      Paint()
+        ..color = const Color(0xFF535447)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 10,
+    );
   }
 
-  void _paintNpcs(Canvas canvas) {
-    for (final npc in engine.npcs) {
-      canvas.save();
-      canvas.translate(npc.position.dx, npc.position.dy);
-
-      // Sombra del NPC
-      final shadowPaint = Paint()..color = Colors.black38;
-      canvas.drawOval(
-        Rect.fromCenter(center: const Offset(0, 18), width: 32, height: 12),
-        shadowPaint,
-      );
-
-      // Sprite Pixel Art del NPC
-      _drawPixelSprite(
-        canvas,
-        npc.sprite,
-        const Offset(-16, -16),
-        pixelSize: 2.2,
-      );
-
-      // Indicador flotante sobre la cabeza (Misión o Interacción '!')
-      final hasQuest = npc.activeQuest != null;
-      final isCompleted = npc.activeQuest?.isCompleted ?? false;
-      final iconColor = isCompleted ? const Color(0xFF55A630) : npc.themeColor;
-
-      final badgeBg = Paint()..color = const Color(0xFF141419);
-      canvas.drawCircle(const Offset(0, -28), 10, badgeBg);
-
-      final badgeBorder = Paint()
-        ..color = iconColor
+  void _paths(Canvas canvas) {
+    final center = engine.townHall.position;
+    final paint = Paint()
+      ..color = engine.map.pathColor.withValues(alpha: .70)
+      ..strokeWidth = 52
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(
+      center,
+      225,
+      Paint()..color = engine.map.pathColor.withValues(alpha: .44),
+    );
+    for (final camp in engine.rivalCamps) {
+      canvas.drawLine(center, camp.position, paint);
+      final delta = camp.position - center;
+      final count = (delta.distance / 38).floor();
+      for (var i = 0; i < count; i++) {
+        final p = center + delta * (i / max(1, count));
+        if (!visible(p)) continue;
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: p, width: 19, height: 12),
+            const Radius.circular(3),
+          ),
+          Paint()..color = const Color(0xFFE6D3AF).withValues(alpha: .10),
+        );
+      }
+    }
+    canvas.drawCircle(
+      center,
+      230,
+      Paint()
+        ..color = const Color(0xFFDDC79D).withValues(alpha: .16)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
-      canvas.drawCircle(const Offset(0, -28), 10, badgeBorder);
+        ..strokeWidth = 2,
+    );
+  }
 
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: hasQuest ? (isCompleted ? '?' : '!') : '💬',
-          style: TextStyle(
-            color: iconColor,
-            fontWeight: FontWeight.w900,
-            fontSize: hasQuest ? 13 : 10,
-          ),
+  void _obstacle(Canvas canvas, MapObstacle obstacle) {
+    final p = obstacle.position;
+    if (obstacle.type == 'tree') {
+      _sprite(
+        canvas,
+        engine.map.biome == MapBiomeType.snow
+            ? _snowTree
+            : PixelArtLibrary.forestTree,
+        p,
+        3.2,
+      );
+    } else if (obstacle.type == 'lava') {
+      final pulse = .65 + sin(engine.elapsedTime * 3 + p.dx) * .15;
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: p,
+          width: obstacle.radius * 2,
+          height: obstacle.radius * 1.45,
         ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      textPainter.paint(canvas, Offset(-textPainter.width / 2, -28 - textPainter.height / 2));
-
-      // Nombre y Rol del NPC
-      final namePainter = TextPainter(
-        text: TextSpan(
-          text: npc.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 10,
-            shadows: [Shadow(color: Colors.black, blurRadius: 4)],
-          ),
+        Paint()..color = const Color(0xFF69352D),
+      );
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: p,
+          width: obstacle.radius * 1.6,
+          height: obstacle.radius,
         ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      namePainter.paint(canvas, Offset(-namePainter.width / 2, 22));
-
-      canvas.restore();
+        Paint()..color = const Color(0xFFEA733F).withValues(alpha: pulse),
+      );
+      for (var i = 0; i < 3; i++) {
+        canvas.drawCircle(
+          p + Offset((i - 1) * 13, sin(engine.elapsedTime + i) * 5),
+          4,
+          Paint()..color = const Color(0xFFFBD881),
+        );
+      }
+    } else {
+      final r = obstacle.radius;
+      _shadow(canvas, p, r * 1.8);
+      final path = Path()
+        ..moveTo(p.dx - r, p.dy)
+        ..lineTo(p.dx - r * .6, p.dy - r * .7)
+        ..lineTo(p.dx + r * .35, p.dy - r)
+        ..lineTo(p.dx + r, p.dy - r * .15)
+        ..lineTo(p.dx + r * .8, p.dy + r * .3)
+        ..lineTo(p.dx - r * .55, p.dy + r * .35)
+        ..close();
+      canvas.drawPath(path, Paint()..color = const Color(0xFF68777D));
+      canvas.drawLine(
+        p + Offset(-r * .5, -r * .5),
+        p + Offset(r * .2, -r * .75),
+        Paint()
+          ..color = const Color(0xFFAAB8B8)
+          ..strokeWidth = 4,
+      );
     }
   }
 
-  void _paintOffscreenEnemyRadar(Canvas canvas, Size size) {
-    if (size.width <= 50.0 || size.height <= 50.0) return;
+  void _camp(Canvas canvas, RivalCampEntity camp) {
+    if (camp.isDestroyed) {
+      canvas.drawOval(
+        Rect.fromCenter(center: camp.position, width: 80, height: 40),
+        Paint()..color = Colors.black26,
+      );
+      _sprite(
+        canvas,
+        PixelArtLibrary.stoneWall,
+        camp.position,
+        2,
+        tint: const Color(0xFF687476),
+        intensity: .5,
+      );
+      _label(
+        canvas,
+        'LIBERADO',
+        camp.position - const Offset(0, 42),
+        const Color(0xFF92D5B3),
+        size: 9,
+      );
+      return;
+    }
+    canvas.drawCircle(
+      camp.position,
+      camp.radius + 10,
+      Paint()..color = const Color(0xFFB56253).withValues(alpha: .18),
+    );
+    _sprite(
+      canvas,
+      PixelArtLibrary.townHall,
+      camp.position,
+      3.0,
+      tint: camp.hitFlashTimer > 0 ? Colors.white : const Color(0xFF8E3244),
+      intensity: camp.hitFlashTimer > 0 ? 0.7 : .45,
+    );
+    _sprite(
+      canvas,
+      PixelArtLibrary.stoneWall,
+      camp.position + const Offset(-38, 24),
+      1.8,
+    );
+    _sprite(
+      canvas,
+      PixelArtLibrary.stoneWall,
+      camp.position + const Offset(38, 24),
+      1.8,
+    );
+    _health(
+      canvas,
+      camp.position - const Offset(0, 57),
+      78,
+      camp.health,
+      camp.maxHealth,
+      const Color(0xFFF08476),
+    );
+    if ((engine.player.position - camp.position).distance < 250) {
+      _label(
+        canvas,
+        camp.name,
+        camp.position - const Offset(0, 74),
+        const Color(0xFFFFB6A3),
+        size: 10,
+        maxWidth: 160,
+      );
+    }
+  }
 
-    final viewportRect = Rect.fromLTWH(
+  PixelSpriteData _buildingSprite(BuildingType type) => switch (type) {
+    BuildingType.townHall => PixelArtLibrary.townHall,
+    BuildingType.watchtower => PixelArtLibrary.watchtower,
+    BuildingType.cottage => PixelArtLibrary.cottage,
+    BuildingType.barricade => PixelArtLibrary.stoneWall,
+    BuildingType.goldMine => PixelArtLibrary.crystalMine,
+    BuildingType.frostTower => PixelArtLibrary.thunderTower,
+    BuildingType.cannonTower => PixelArtLibrary.watchtower,
+  };
+
+  void _building(Canvas canvas, VillageBuildingEntity building) {
+    final hall = building.type == BuildingType.townHall;
+    if (building.isDead) {
+      _sprite(
+        canvas,
+        PixelArtLibrary.stoneWall,
+        building.position,
+        1.6,
+        tint: Colors.grey,
+        intensity: .8,
+      );
+      return;
+    }
+    final frost = building.type == BuildingType.frostTower;
+    final cannon = building.type == BuildingType.cannonTower;
+    final color = frost
+        ? const Color(0xFF99E3F5)
+        : cannon
+        ? const Color(0xFFEDA468)
+        : const Color(0xFFB9D990);
+    _sprite(
+      canvas,
+      _buildingSprite(building.type),
+      building.position,
+      hall ? 3.3 : 2.6,
+      tint: building.hitFlashTimer > 0
+          ? Colors.white
+          : frost
+          ? const Color(0xFF7BCFE7)
+          : cannon
+          ? const Color(0xFFEF9863)
+          : null,
+      intensity: building.hitFlashTimer > 0 ? 0.75 : .35,
+    );
+    if (cannon) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: building.position - const Offset(0, 26),
+            width: 30,
+            height: 13,
+          ),
+          const Radius.circular(4),
+        ),
+        Paint()..color = const Color(0xFF343B48),
+      );
+      canvas.drawCircle(
+        building.position + const Offset(15, -26),
+        6,
+        Paint()..color = Colors.black87,
+      );
+    }
+    if (building.health < building.maxHealth || hall) {
+      _health(
+        canvas,
+        building.position - Offset(0, hall ? 54 : 47),
+        hall ? 84 : 44,
+        building.health,
+        building.maxHealth,
+        color,
+      );
+    }
+    if (engine.villageShieldTimer > 0) {
+      canvas.drawCircle(
+        building.position,
+        building.radius + 9,
+        Paint()
+          ..color = const Color(0xFFFDE4A1).withValues(alpha: .65)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+    if (building.level > 1) {
+      _label(
+        canvas,
+        '${building.level}',
+        building.position + const Offset(24, 7),
+        const Color(0xFFF4D58C),
+        size: 10,
+      );
+    }
+    if (hall) {
+      _label(
+        canvas,
+        'CORAZÓN',
+        building.position - const Offset(0, 68),
+        const Color(0xFFDAEADA),
+        size: 9,
+      );
+    }
+  }
+
+  void _enemy(Canvas canvas, EnemyEntity enemy) {
+    final config = enemy.config;
+    final size = config.isBoss ? 3.8 : 2.6;
+    final sprite = SpriteAnimation.frame(
+      config.sprite,
+      phase: enemy.walkPhase,
+      moving: true,
+      attacking: enemy.attackTimer > config.attackCooldownSeconds - .2,
+    );
+    _sprite(
+      canvas,
+      sprite,
+      enemy.position,
+      size,
+      flip: enemy.facingLeft,
+      tint: enemy.hitFlashTimer > 0
+          ? Colors.white
+          : enemy.slowTimer > 0
+          ? const Color(0xFF9EE8EF)
+          : null,
+      intensity: .65,
+    );
+    if (enemy.phase > 1) {
+      canvas.drawCircle(
+        enemy.position,
+        config.hitRadius + 5,
+        Paint()
+          ..color = const Color(0xFFEFA157).withValues(alpha: .65)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+    if (enemy.health < config.maxHealth || config.isBoss) {
+      _health(
+        canvas,
+        enemy.position - Offset(0, config.isBoss ? 65 : 39),
+        config.isBoss ? 94 : 30,
+        enemy.health,
+        config.maxHealth,
+        config.healthBarColor,
+      );
+    }
+    if (config.isBoss) {
+      _label(
+        canvas,
+        '${config.name} · FASE ${enemy.phase}',
+        enemy.position - const Offset(0, 81),
+        const Color(0xFFFFD397),
+        size: 10,
+        maxWidth: 190,
+      );
+    }
+  }
+
+  void _corpse(Canvas canvas, CorpseEntity corpse) {
+    final amount = (corpse.lifeTime / corpse.maxLifeTime).clamp(0.0, 1.0);
+    canvas.saveLayer(
+      Rect.fromCenter(center: corpse.position, width: 160, height: 160),
+      Paint()..color = Colors.white.withValues(alpha: amount),
+    );
+    canvas.save();
+    canvas.translate(corpse.position.dx, corpse.position.dy);
+    canvas.rotate((1 - amount) * .8 * (corpse.facingLeft ? -1 : 1));
+    canvas.scale(1, .35 + amount * .65);
+    _sprite(canvas, corpse.sprite, Offset.zero, 2.6, flip: corpse.facingLeft);
+    canvas.restore();
+    canvas.restore();
+  }
+
+  void _player(Canvas canvas) {
+    final player = engine.player;
+    final role = player.playerClass;
+    final attacking = player.attackAnimTimer > 0;
+    final base = attacking ? role.spriteAttack : role.spriteIdle;
+    final sprite = SpriteAnimation.frame(
+      base,
+      phase: player.isMoving ? player.walkPhase : engine.elapsedTime * 2,
+      moving: player.isMoving,
+      facingAway: player.aimDirection.dy < -.55,
+      attacking: attacking,
+    );
+    if (player.dashTimer > 0) {
+      for (var i = 3; i > 0; i--) {
+        final pos = player.position - player.aimDirection * (i * 12.0);
+        canvas.drawOval(
+          Rect.fromCenter(center: pos, width: 30, height: 17),
+          Paint()..color = role.themeColor.withValues(alpha: .12 * (4 - i)),
+        );
+      }
+    }
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: player.position + const Offset(0, 15),
+        width: 39,
+        height: 19,
+      ),
+      Paint()
+        ..color = role.themeColor.withValues(alpha: .40)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    _sprite(
+      canvas,
+      sprite,
+      player.position,
+      2.8,
+      flip: player.aimDirection.dx < -.1,
+      tint: player.hitFlashTimer > 0 ? Colors.white : null,
+      intensity: .75,
+    );
+    final aim = player.aimDirection;
+    final angle = atan2(aim.dy, aim.dx);
+    canvas.save();
+    canvas.translate(player.position.dx, player.position.dy);
+    canvas.rotate(angle);
+    if (role.isMelee) {
+      if (attacking) {
+        final reach = role.attackRange;
+        canvas.drawArc(
+          Rect.fromCircle(center: Offset.zero, radius: reach * .75),
+          -.65,
+          1.3,
+          false,
+          Paint()
+            ..color = role.themeColor.withValues(alpha: .5)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 7,
+        );
+      }
+      // The articulated actor already carries a weapon. A small direction
+      // marker keeps aiming clear without drawing a second block-shaped weapon.
+      canvas.drawPath(
+        Path()
+          ..moveTo(30, -4)
+          ..lineTo(37, 0)
+          ..lineTo(30, 4),
+        Paint()
+          ..color = const Color(0xFFCFBD91)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..strokeCap = StrokeCap.round,
+      );
+    } else {
+      canvas.drawLine(
+        const Offset(22, 0),
+        const Offset(48, 0),
+        Paint()
+          ..color = role.themeColor.withValues(alpha: .65)
+          ..strokeWidth = 1.5,
+      );
+      canvas.drawCircle(
+        const Offset(51, 0),
+        4,
+        Paint()
+          ..color = const Color(0xFFF6E2AB)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+      if (attacking && role.type == PlayerRoleType.mage) {
+        canvas.drawCircle(
+          const Offset(24, 0),
+          9,
+          Paint()..color = const Color(0xFFE6BFFF).withValues(alpha: .8),
+        );
+      }
+    }
+    if (player.isBlocking || player.shieldTimer > 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset.zero, radius: 33),
+        -.85,
+        1.7,
+        false,
+        Paint()
+          ..color = const Color(0xFFB5DBED)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5,
+      );
+    }
+    canvas.restore();
+    if (player.health < player.maxHealth) {
+      _health(
+        canvas,
+        player.position - const Offset(0, 39),
+        44,
+        player.health,
+        player.maxHealth,
+        const Color(0xFF9DD49D),
+      );
+    }
+  }
+
+  void _npc(Canvas canvas, NpcEntity npc) {
+    _sprite(canvas, npc.sprite, npc.position, 2.5);
+    final quest = npc.activeQuest;
+    final near = (engine.player.position - npc.position).distance < 110;
+    final completed = quest != null && quest.isCompleted && !quest.isClaimed;
+    if (near || completed) {
+      _label(
+        canvas,
+        completed ? 'RECOMPENSA' : npc.name,
+        npc.position - const Offset(0, 44),
+        completed ? const Color(0xFFEACD88) : npc.themeColor,
+        size: 10,
+        maxWidth: 125,
+      );
+      if (near) {
+        canvas.drawCircle(
+          npc.position + const Offset(0, 18),
+          21,
+          Paint()
+            ..color = npc.themeColor.withValues(alpha: .4)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1,
+        );
+      }
+    } else if (quest != null && !quest.isClaimed) {
+      _label(
+        canvas,
+        '!',
+        npc.position - const Offset(0, 39),
+        const Color(0xFFEACD88),
+        size: 14,
+      );
+    }
+  }
+
+  void _projectiles(Canvas canvas) {
+    for (final p in engine.projectiles) {
+      if (!visible(p.position)) continue;
+      final length = p.velocity.distance;
+      if (length < .001) continue;
+      final dir = p.velocity / length;
+      canvas.drawLine(
+        p.position - dir * 16,
+        p.position,
+        Paint()
+          ..color = p.color.withValues(alpha: .35)
+          ..strokeWidth = p.radius * 2,
+      );
+      if (p.isExplosive) {
+        canvas.drawCircle(
+          p.position,
+          p.radius + 3,
+          Paint()..color = p.color.withValues(alpha: .25),
+        );
+        canvas.drawCircle(p.position, p.radius, Paint()..color = p.color);
+        canvas.drawCircle(
+          p.position - const Offset(1, 1),
+          p.radius * .4,
+          Paint()..color = const Color(0xFFFFE8B7),
+        );
+      } else {
+        canvas.drawLine(
+          p.position - dir * 9,
+          p.position,
+          Paint()
+            ..color = p.color
+            ..strokeWidth = 3,
+        );
+        final side = Offset(-dir.dy, dir.dx) * 4;
+        final path = Path()
+          ..moveTo(p.position.dx + dir.dx * 4, p.position.dy + dir.dy * 4)
+          ..lineTo(
+            p.position.dx - dir.dx * 3 + side.dx,
+            p.position.dy - dir.dy * 3 + side.dy,
+          )
+          ..lineTo(
+            p.position.dx - dir.dx * 3 - side.dx,
+            p.position.dy - dir.dy * 3 - side.dy,
+          )
+          ..close();
+        canvas.drawPath(path, Paint()..color = p.color);
+      }
+    }
+  }
+
+  void _hazards(Canvas canvas) {
+    for (final h in engine.hazards) {
+      if (!view.inflate(h.radius).contains(h.position)) continue;
+      final warning = h.isWarning;
+      final pulse = .7 + sin(engine.elapsedTime * 9) * .15;
+      canvas.drawCircle(
+        h.position,
+        h.radius,
+        Paint()..color = h.color.withValues(alpha: warning ? 0.13 : .22),
+      );
+      canvas.drawCircle(
+        h.position,
+        h.radius,
+        Paint()
+          ..color = h.color.withValues(alpha: pulse)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = warning ? 2 : 4,
+      );
+      if (warning) {
+        canvas.drawArc(
+          Rect.fromCircle(center: h.position, radius: h.radius),
+          -pi / 2,
+          2 * pi * h.warningProgress,
+          false,
+          Paint()
+            ..color = h.color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 5,
+        );
+        _label(canvas, h.isFriendly ? '+' : '!', h.position, h.color, size: 20);
+      } else if (h.isFriendly) {
+        canvas.drawLine(
+          h.position - const Offset(7, 0),
+          h.position + const Offset(7, 0),
+          Paint()
+            ..color = h.color
+            ..strokeWidth = 3,
+        );
+        canvas.drawLine(
+          h.position - const Offset(0, 7),
+          h.position + const Offset(0, 7),
+          Paint()
+            ..color = h.color
+            ..strokeWidth = 3,
+        );
+      }
+    }
+  }
+
+  void _objective(Canvas canvas) {
+    final pos = engine.objectivePosition;
+    if (pos == null || engine.objectiveComplete) return;
+    canvas.drawCircle(
+      pos,
+      65,
+      Paint()..color = const Color(0xFFB4D9EC).withValues(alpha: .12),
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: pos, radius: 65),
+      -pi / 2,
+      2 * pi * engine.objectiveProgress,
+      false,
+      Paint()
+        ..color = const Color(0xFF91D9EE)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4,
+    );
+    _sprite(
+      canvas,
+      PixelArtLibrary.thunderTower,
+      pos,
+      2.5,
+      tint: const Color(0xFFBECBD0),
+      intensity: .6,
+    );
+    _label(
+      canvas,
+      'RECUPERAR TORRE',
+      pos - const Offset(0, 58),
+      const Color(0xFFC6E6F3),
+      size: 10,
+    );
+  }
+
+  void _destination(Canvas canvas) {
+    final pos = engine.player.targetDestination;
+    if (pos == null) return;
+    canvas.drawCircle(
+      pos,
+      9 + sin(engine.elapsedTime * 5) * 2,
+      Paint()
+        ..color = const Color(0xFFEAD49A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    canvas.drawCircle(pos, 3, Paint()..color = const Color(0xFFEAD49A));
+  }
+
+  void _placement(Canvas canvas) {
+    final type = engine.pendingBuildingType;
+    final pos = engine.buildPreviewPosition;
+    if (type == null || pos == null) return;
+    final valid = engine.canPlaceStructure(type, pos);
+    final color = valid ? const Color(0xFF9DDCBA) : const Color(0xFFF18B8B);
+    canvas.drawCircle(
+      engine.townHall.position,
+      430,
+      Paint()
+        ..color = color.withValues(alpha: .22)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    final spec = BuildingSpec.forType(type);
+    if (spec.range > 0) {
+      canvas.drawCircle(
+        pos,
+        spec.range,
+        Paint()..color = color.withValues(alpha: .10),
+      );
+    }
+    canvas.drawCircle(
+      pos,
+      spec.radius + 8,
+      Paint()..color = color.withValues(alpha: .3),
+    );
+    canvas.drawCircle(
+      pos,
+      spec.radius + 8,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    _sprite(
+      canvas,
+      _buildingSprite(type),
+      pos,
+      2.6,
+      tint: color,
+      intensity: .65,
+    );
+    _label(
+      canvas,
+      valid ? 'UBICACIÓN VÁLIDA' : 'ESPACIO BLOQUEADO',
+      pos - const Offset(0, 65),
+      color,
+      size: 10,
+    );
+  }
+
+  void _fog(Canvas canvas) {
+    final tile = GameEngine.fogTileSize;
+    final fog = Path();
+    for (
+      var r = max(0, (view.top / tile).floor());
+      r <= min(engine.fogRows - 1, (view.bottom / tile).ceil());
+      r++
+    ) {
+      for (
+        var col = max(0, (view.left / tile).floor());
+        col <= min(engine.fogCols - 1, (view.right / tile).ceil());
+        col++
+      ) {
+        if (!engine.fogExplored[r][col]) {
+          fog.addRect(Rect.fromLTWH(col * tile, r * tile, tile + 1, tile + 1));
+        }
+      }
+    }
+    canvas.drawPath(
+      fog,
+      Paint()
+        ..color = const Color(0xD1111612)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+    );
+  }
+
+  void _radar(Canvas canvas, Size size) {
+    if (size.shortestSide < 160) return;
+    final screen = Rect.fromLTWH(
       engine.cameraOffset.dx,
       engine.cameraOffset.dy,
       size.width,
       size.height,
     );
-
-    final radarPaint = Paint()
-      ..color = const Color(0xFFEF233C)
-      ..style = PaintingStyle.fill;
-
+    final sectors = <int>{};
     for (final enemy in engine.enemies) {
-      if (viewportRect.contains(enemy.position)) continue;
-
-      final centerScreen = Offset(size.width / 2, size.height / 2);
-      final enemyInScreen = enemy.position - engine.cameraOffset;
-      final diff = enemyInScreen - centerScreen;
-      final angle = atan2(diff.dy, diff.dx);
-
-      const margin = 24.0;
-      final minX = margin;
-      final maxX = max(minX, size.width - margin);
-      final minY = margin;
-      final maxY = max(minY, size.height - margin);
-
-      final edgeX = (centerScreen.dx + cos(angle) * (size.width / 2 - margin))
-          .clamp(minX, maxX);
-      final edgeY = (centerScreen.dy + sin(angle) * (size.height / 2 - margin))
-          .clamp(minY, maxY);
-
-      final point = Offset(edgeX, edgeY);
-
+      if (enemy.isDead || screen.contains(enemy.position)) continue;
+      final d = enemy.position - engine.player.position;
+      if (d.distance > 650) continue;
+      final angle = atan2(d.dy, d.dx);
+      final sector = ((angle + pi) / (pi / 6)).floor();
+      if (!sectors.add(sector)) continue;
+      final origin = Offset(size.width / 2, size.height / 2);
+      final point =
+          origin +
+          Offset(
+            cos(angle) * (size.width / 2 - 20),
+            sin(angle) * (size.height / 2 - 115),
+          );
       canvas.save();
       canvas.translate(point.dx, point.dy);
       canvas.rotate(angle);
-
-      final path = Path()
-        ..moveTo(8, 0)
-        ..lineTo(-6, -6)
-        ..lineTo(-6, 6)
-        ..close();
-      canvas.drawPath(path, radarPaint);
+      canvas.drawPath(
+        Path()
+          ..moveTo(6, 0)
+          ..lineTo(-4, -4)
+          ..lineTo(-4, 4)
+          ..close(),
+        Paint()..color = const Color(0xFFFFA28E),
+      );
       canvas.restore();
     }
   }
 
-  void _paintHealthBar(
-    Canvas canvas, {
-    required Offset center,
-    required double width,
-    required double height,
-    required double current,
-    required double max,
-    required Color barColor,
-    String? label,
-  }) {
-    final left = center.dx - width / 2;
-    final top = center.dy - height / 2;
+  void _shadow(Canvas canvas, Offset p, double width) => canvas.drawOval(
+    Rect.fromCenter(
+      center: p + const Offset(0, 14),
+      width: width,
+      height: width * .3,
+    ),
+    Paint()..color = Colors.black.withValues(alpha: .25),
+  );
 
-    final bgPaint = Paint()..color = const Color(0xFF141419);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(left - 1, top - 1, width + 2, height + 2), const Radius.circular(3)),
-      bgPaint,
-    );
-
-    final pct = (current / max).clamp(0.0, 1.0);
-    final fillPaint = Paint()..color = barColor;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(left, top, width * pct, height), const Radius.circular(2)),
-      fillPaint,
-    );
-
-    if (label != null) {
-      final textSpan = TextSpan(
-        text: label,
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      );
-      final tp = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(center.dx - tp.width / 2, top - tp.height - 2));
-    }
-  }
-
-  void _drawPixelSprite(
+  void _sprite(
     Canvas canvas,
     PixelSpriteData sprite,
-    Offset pos, {
-    required double pixelSize,
-    bool flipX = false,
-    Color? tintColor,
-    double tintIntensity = 0.0,
+    Offset p,
+    double scale, {
+    bool flip = false,
+    Color? tint,
+    double intensity = 0,
   }) {
+    final width = sprite.width * scale, height = sprite.height * scale;
     canvas.save();
-    canvas.translate(pos.dx, pos.dy);
-
-    final painter = PixelSpritePainter(
+    canvas.translate((p.dx - width / 2), (p.dy - height * .72));
+    PixelSpritePainter(
       sprite: sprite,
-      pixelSize: pixelSize,
-      flipX: flipX,
-      tintColor: tintColor,
-      tintIntensity: tintIntensity,
-      drawShadow: true,
-    );
-    painter.paint(canvas, Size(sprite.width * pixelSize, sprite.height * pixelSize));
-
+      pixelSize: scale,
+      flipX: flip,
+      tintColor: tint,
+      tintIntensity: intensity,
+    ).paint(canvas, Size(width, height));
     canvas.restore();
   }
 
+  void _health(
+    Canvas canvas,
+    Offset pos,
+    double width,
+    double hp,
+    double maxHp,
+    Color color,
+  ) {
+    if (maxHp <= 0) return;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: pos, width: width + 2, height: 6),
+        const Radius.circular(3),
+      ),
+      Paint()..color = const Color(0xFF101B25),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          pos.dx - width / 2,
+          pos.dy - 2,
+          width * (hp / maxHp).clamp(0, 1),
+          4,
+        ),
+        const Radius.circular(2),
+      ),
+      Paint()..color = color,
+    );
+  }
+
+  void _label(
+    Canvas canvas,
+    String text,
+    Offset pos,
+    Color color, {
+    double size = 11,
+    double maxWidth = 180,
+    bool background = true,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.w700,
+          shadows: const [Shadow(color: Colors.black, blurRadius: 2)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth);
+    final rect = Rect.fromCenter(
+      center: pos,
+      width: painter.width + 10,
+      height: painter.height + 4,
+    );
+    if (background) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(5)),
+        Paint()..color = const Color(0xFF101B25).withValues(alpha: .84),
+      );
+    }
+    painter.paint(
+      canvas,
+      Offset(pos.dx - painter.width / 2, pos.dy - painter.height / 2),
+    );
+    painter.dispose();
+  }
+
   @override
-  bool shouldRepaint(covariant BattlefieldPainter oldDelegate) => true;
+  bool shouldRepaint(covariant BattlefieldPainter oldDelegate) =>
+      oldDelegate.engine != engine;
 }

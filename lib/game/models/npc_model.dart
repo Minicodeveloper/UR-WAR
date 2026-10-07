@@ -3,10 +3,10 @@ import '../graphics/pixel_art_data.dart';
 
 enum NpcRoleType {
   blacksmith, // Herrero (Mejora armas y armaduras)
-  merchant,   // Comerciante Isekai (Intercambia recursos / artefactos)
+  merchant, // Comerciante Isekai (Intercambia recursos / artefactos)
   questGiver, // Anciano del Gremio (Misiones y recompensas)
-  guard,      // Guardián Alférez (Defiende NPC y patrulla)
-  alchemist,  // Alquimista (Pociones y elixires mágicos)
+  guard, // Guardián Alférez (Defiende NPC y patrulla)
+  alchemist, // Alquimista (Pociones y elixires mágicos)
 }
 
 class NpcQuest {
