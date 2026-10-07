@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'core/constants.dart';
-import 'core/theme.dart';
-import 'screens/main_menu_screen.dart';
-// Herramienta que instalamos para compartir datos
 import 'package:provider/provider.dart';
-
-// Nuestro cerebro del juego 
+import 'core/constants.dart';
+import 'core/save_system.dart';
+import 'core/theme.dart';
 import 'providers/game_state.dart';
+import 'screens/main_menu_screen.dart';
 
 void main() {
-  // Envolvemos toda la aplicación en este 'Provider'
+  WidgetsFlutterBinding.ensureInitialized();
+  SaveSystem.initialize();
+
   runApp(
     ChangeNotifierProvider(
-      // Aquí "creamos" el cerebro y lo encendemos
       create: (context) => GameState(),
-      // 'child' es tu aplicación original. Así la app queda "dentro" del proveedor.
-      child: const UrWarApp(), // (Nota: Si tu app no se llama MyApp, usa el nombre normal; ósea: UrWarApp())
+      child: const UrWarApp(),
     ),
   );
 }

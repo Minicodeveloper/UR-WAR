@@ -66,6 +66,7 @@ class MainMenuScreen extends StatelessWidget {
                   _MenuButton(
                     icon: Icons.shield_rounded,
                     label: 'JUGAR',
+                    subtitle: 'Defensa de la Aldea (Mapa Gigante & Joystick)',
                     isPrimary: true,
                     onTap: () {
                       Navigator.push(
@@ -82,6 +83,7 @@ class MainMenuScreen extends StatelessWidget {
                   _MenuButton(
                     icon: Icons.grid_view_rounded,
                     label: 'ARENA TÁCTICA',
+                    subtitle: 'Tablero Táctico 8x8 por Turnos',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -123,10 +125,12 @@ class MainMenuScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   const Text(
-                    'v${AppConstants.appVersion}',
+                    'v${AppConstants.appVersion} • Controles Táctiles & Joystick Activos',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: AppTheme.accentColor,
                       fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -142,12 +146,14 @@ class MainMenuScreen extends StatelessWidget {
 class _MenuButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
   final bool isPrimary;
 
   const _MenuButton({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.onTap,
     this.isPrimary = false,
   });
@@ -155,25 +161,56 @@ class _MenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 320),
+      constraints: const BoxConstraints(maxWidth: 340),
       child: SizedBox(
         width: double.infinity,
-        height: 56,
-        child: ElevatedButton.icon(
+        height: subtitle != null ? 64 : 56,
+        child: ElevatedButton(
           onPressed: onTap,
-          icon: Icon(icon, size: 24),
-          label: Text(label),
           style: ElevatedButton.styleFrom(
             backgroundColor:
                 isPrimary ? AppTheme.primaryColor : AppTheme.surfaceColor,
             foregroundColor: Colors.white,
             elevation: isPrimary ? 8 : 2,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: isPrimary
                   ? BorderSide.none
                   : const BorderSide(color: Colors.white12),
             ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 26),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isPrimary ? Colors.white.withValues(alpha: 0.85) : Colors.white60,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

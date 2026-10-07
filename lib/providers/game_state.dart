@@ -1,116 +1,180 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
-import '../models/robot.dart'; 
+import '../models/robot.dart';
 
 class GameState extends ChangeNotifier {
-  final int boardSize = 8; 
-  List<Robot> robots = []; 
-  int currentTurn = 1;     
-
-  // NUEVO: Una variable para recordar qué robot hemos seleccionado.
-  // Tiene un '?' porque al inicio no hay nadie seleccionado (es null).
-  String? selectedRobotId; 
+  final int boardSize = 8;
+  List<Robot> robots = [];
+  int currentTurn = 1;
+  String? selectedRobotId;
+  String? logs;
+  bool isGameOver = false;
+  String winnerMessage = '';
 
   GameState() {
     _initializeGame();
   }
 
   void _initializeGame() {
-    robots.add(Robot(id: 'player_1', name: 'Alpha', x: 0, y: 0));
-    robots.add(Robot(id: 'enemy_1', name: 'Omega', x: 7, y: 7));
+    robots = [
+      Robot(id: 'player_1', name: 'Alpha (Jugador)', x: 1, y: 1, hp: 100, maxHp: 100, attackRange: 1, attackDamage: 35),
+      Robot(id: 'enemy_1', name: 'Omega (Enemigo)', x: 6, y: 6, hp: 100, maxHp: 100, attackRange: 1, attackDamage: 25),
+    ];
+    currentTurn = 1;
+    selectedRobotId = null;
+    isGameOver = false;
+    winnerMessage = '';
+    logs = '¡Bienvenido a la Arena Táctica por Turnos! Selecciona a tu Robot Alpha para moverte o atacar.';
     notifyListeners();
   }
 
-  // NUEVO: Función que se ejecuta cuando el jugador toca una casilla (x, y)
+  void resetGame() {
+    _initializeGame();
+  }
+
   void onCellTapped(int x, int y) {
-    // 1. Miramos si hay algún robot en la casilla que el usuario acaba de tocar
-    var robotAtCell = robots.where((r) => r.x == x && r.y == y).firstOrNull;
+    if (isGameOver) return;
+
+    var robotAtCell = robots.where((r) => r.x == x && r.y == y && r.hp > 0).firstOrNull;
 
     if (selectedRobotId == null) {
-      // FASE DE SELECCIÓN: Si no hay nadie seleccionado...
-      // Y tocamos un robot nuestro (su ID empieza con 'p' de player)
+      // Selección de robot del jugador
       if (robotAtCell != null && robotAtCell.id.startsWith('p')) {
-        selectedRobotId = robotAtCell.id; // Lo seleccionamos
-        notifyListeners(); // Avisamos a la pantalla
+        selectedRobotId = robotAtCell.id;
+        logs = 'Robot ${robotAtCell.name} seleccionado. Toca una casilla adyacente para moverte o a un enemigo para atacar.';
+        notifyListeners();
       }
     } else {
-      // FASE DE MOVIMIENTO: Si YA teníamos un robot seleccionado...
-      
+      var selectedRobot = robots.firstWhere((r) => r.id == selectedRobotId);
+
       if (robotAtCell == null) {
-        // A) Tocamos una casilla vacía: ¡Nos movemos!
-        // Buscamos al robot seleccionado en nuestra lista
-        var selectedRobot = robots.firstWhere((r) => r.id == selectedRobotId);
-        
-        // NUEVO: LA REGLA DE MEDIR
-        // Usamos .abs() que significa "Valor Absoluto" (convierte números negativos a positivos)
-        // Calculamos cuántos cuadros de distancia hay entre el robot y el lugar que tocaste
+        // Movimiento a casilla vacía
         int distanceX = (selectedRobot.x - x).abs();
         int distanceY = (selectedRobot.y - y).abs();
-
-        // Si sumas la distancia X y la Y, y da exactamente 1...
-        // ¡Significa que tocaste la casilla justo al lado! (No en diagonal)
         bool isOneStep = (distanceX + distanceY) == 1;
 
-        // NUEVO: LA BATERÍA (Puntos de Acción)
-        // Solo nos movemos si tocaste a 1 paso de distancia Y si el robot tiene puntos de acción
         if (isOneStep && selectedRobot.actionPoints > 0) {
-            selectedRobot.x = x;
-            selectedRobot.y = y;
+          selectedRobot.x = x;
+          selectedRobot.y = y;
+          selectedRobot.actionPoints -= 1;
+          logs = '${selectedRobot.name} se movió a ($x, $y). Puntos de acción restantes: ${selectedRobot.actionPoints}.';
 
-            // Le quitamos 1 Punto de Acción por hacer el movimiento
-            selectedRobot.actionPoints -= 1;
-            selectedRobotId = null; // Lo soltamos
-            notifyListeners();
-        } else {
-            // Si tocas muy lejos o no tiene puntos de accción, simplemente lo deseleccionamos
+          if (selectedRobot.actionPoints <= 0) {
             selectedRobotId = null;
-            notifyListeners();
+          }
+        } else {
+          selectedRobotId = null;
+          logs = 'Movimiento cancelado. Selecciona una casilla contigua vacía.';
         }
+        notifyListeners();
+      } else if (robotAtCell.id.startsWith('e')) {
+        // Ataque a robot enemigo
+        int distanceX = (selectedRobot.x - x).abs();
+        int distanceY = (selectedRobot.y - y).abs();
+        bool inRange = (distanceX + distanceY) <= selectedRobot.attackRange;
 
+        if (inRange && selectedRobot.actionPoints > 0) {
+          robotAtCell.hp = max(0, robotAtCell.hp - selectedRobot.attackDamage);
+          selectedRobot.actionPoints -= 1;
+          logs = '¡${selectedRobot.name} atacó a ${robotAtCell.name} infligiendo ${selectedRobot.attackDamage} de daño! HP enemigo: ${robotAtCell.hp}.';
+
+          if (robotAtCell.hp <= 0) {
+            logs = '¡${robotAtCell.name} ha sido destruido! ¡VICTORIA!';
+            isGameOver = true;
+            winnerMessage = '¡VICTORIA DEL JUGADOR!';
+          }
+
+          if (selectedRobot.actionPoints <= 0) {
+            selectedRobotId = null;
+          }
+        } else {
+          selectedRobotId = null;
+          logs = 'Enemigo fuera de alcance o sin puntos de acción suficientes.';
+        }
+        notifyListeners();
       } else if (robotAtCell.id == selectedRobotId) {
         selectedRobotId = null;
+        logs = 'Robot deseleccionado.';
         notifyListeners();
-        }
       }
     }
+  }
 
-    // NUEVO: Función ppara que primero juegue el enemigo 
-    void endTurn() {
-        // 1. ¡EL ENEMIGO ACTÚA PRIMERO!
-        _playEnemyTurn();
+  void endTurn() {
+    if (isGameOver) return;
 
-        // 2. PREPARAMOS EL SIGUIENTE TURNO (Para el jugador)
-        currentTurn++; 
-        for (var robot in robots) {
-            robot.actionPoints = 3; // Ambos recuperan su energía
-        }
+    // 1. Turno de la IA Enemiga
+    _playEnemyTurn();
 
-        selectedRobotId = null; // Deseleccionamos si había algún robot marcado
-        notifyListeners(); // ¡Gritamos por el megáfono para que la pantalla se actualice!
+    if (isGameOver) {
+      notifyListeners();
+      return;
     }
 
-    // NUEVO: La inteligencia Artificial del Enemigo
-    void _playEnemyTurn() {
-        // 1. Identificamos quién es quién en la lista
-        var player = robots.firstWhere((r) => r.id.startsWith('p'));
-        var enemy = robots.firstWhere((r) => r.id.startsWith('e'));
+    // 2. Reiniciar turno para el jugador
+    currentTurn++;
+    for (var robot in robots) {
+      robot.actionPoints = 3;
+    }
 
-        // 2. El enemigo usa sus puntos de acción uno por uno
-        while (enemy.actionPoints > 0) {
-            // Calculamos la diferencia matemática entre las coordenas
-            int distanceX = player.x - enemy.x;
-            int distanceY = player.y - enemy.y;
+    selectedRobotId = null;
+    notifyListeners();
+  }
 
-            // Si la suma de las distancias es 1, ¡ya está pegado al jugador!
-            // Si está más lejos es horizontal, se mueve en X. Si no, en Y.
-            if (distanceX.abs() > distanceY.abs()) {
-                // .sign es un truco de Dart: devuelve 1 si es positivo, o -1 si es negativo
-                enemy.x += distanceX.sign;
-            } else {
-                enemy.y += distanceY.sign;
-            }
+  void _playEnemyTurn() {
+    var player = robots.where((r) => r.id.startsWith('p') && r.hp > 0).firstOrNull;
+    var enemy = robots.where((r) => r.id.startsWith('e') && r.hp > 0).firstOrNull;
 
-            // Gasta 1 punto de acción por el paso dado
-            enemy.actionPoints--;
+    if (player == null || enemy == null) return;
+
+    enemy.actionPoints = 3;
+
+    while (enemy.actionPoints > 0 && player.hp > 0) {
+      int distanceX = (player.x - enemy.x).abs();
+      int distanceY = (player.y - enemy.y).abs();
+      int totalDist = distanceX + distanceY;
+
+      if (totalDist <= enemy.attackRange) {
+        // Atacar al jugador
+        player.hp = max(0, player.hp - enemy.attackDamage);
+        enemy.actionPoints--;
+        logs = '¡El enemigo ${enemy.name} te ha atacado causando ${enemy.attackDamage} de daño! Tu HP: ${player.hp}.';
+
+        if (player.hp <= 0) {
+          isGameOver = true;
+          winnerMessage = '¡DERROTA! Tu Robot Alpha ha sido destruido.';
+          break;
         }
+      } else {
+        // Avanzar hacia el jugador
+        int diffX = player.x - enemy.x;
+        int diffY = player.y - enemy.y;
+
+        if (diffX.abs() > diffY.abs()) {
+          enemy.x += diffX.sign;
+        } else {
+          enemy.y += diffY.sign;
+        }
+
+        enemy.actionPoints--;
+        logs = 'El enemigo ${enemy.name} avanza hacia tu posición.';
+      }
     }
   }
+
+  void moveInDirection(int dx, int dy) {
+    if (isGameOver) return;
+    if (selectedRobotId == null) {
+      final playerRobot = robots.where((r) => r.id.startsWith('p') && r.hp > 0).firstOrNull;
+      if (playerRobot != null) {
+        selectedRobotId = playerRobot.id;
+      }
+    }
+    if (selectedRobotId != null) {
+      final selectedRobot = robots.firstWhere((r) => r.id == selectedRobotId);
+      final targetX = (selectedRobot.x + dx).clamp(0, boardSize - 1);
+      final targetY = (selectedRobot.y + dy).clamp(0, boardSize - 1);
+      onCellTapped(targetX, targetY);
+    }
+  }
+}

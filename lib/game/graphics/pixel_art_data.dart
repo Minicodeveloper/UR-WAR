@@ -462,6 +462,130 @@ class PixelArtLibrary {
   );
 
   // ==========================================
+  // ENEMIGO 6: DRAGÓN DE MAGMA (MAGMA DRAGON) - 24x24
+  // ==========================================
+  static final PixelSpriteData magmaDragon = PixelSpriteData(
+    width: 24,
+    height: 24,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'r': const Color(0xFF6A040F), // Escama lava oscura
+      'R': const Color(0xFFD00000), // Escama roja brillante
+      'o': const Color(0xFFDC2F02), // Magma ardiente
+      'y': const Color(0xFFFFBA08), // Fuego intenso
+      'e': const Color(0xFFFFFFFF), // Ojos amarillos/blancos
+      'w': const Color(0xFFE85D04), // Membrana alas
+      'W': const Color(0xFF9D0208), // Sombra alas
+      'h': const Color(0xFF212529), // Cuernos negros
+    },
+    matrix: [
+      '#h#..................#h#',
+      '#hh#...######.......#hh#',
+      '.#hh#.#WwwwwW#.....#hh#.',
+      '..#h##WwWWwwW##...#hh#..',
+      '..#rr#wWrrRWw#rr##hh#...',
+      '..#rR#WrrrrRR#RrR#h#....',
+      '..#rR#rrrrrrrr#RrR#.....',
+      '..#rR#r#e#rr#e#RrR#.....',
+      '..#rRR#rroooo#RRrR#.....',
+      '...#rRR#oooo#RRrR#......',
+      '...#wWrr#y#rrWw#........',
+      '..#WwWrrrRRrrrWwW#......',
+      '.#WwWwrrrRRrrrWwWw#.....',
+      '#WwWw#rrrRRrrr#WwWw#....',
+      '#wWw#.#ooYYoo#.#wWw#....',
+      '#Ww#..#oYYYYo#..#wW#....',
+      '.##...#rrRRrr#...##.....',
+      '......#rrRRrr#..........',
+      '.....#rrrRRrrr#.........',
+      '.....#rrR##Rrr#.........',
+      '....#rrr#..#rrr#........',
+      '....#rrr#..#rrr#........',
+      '....#rrr#..#rrr#........',
+      '....#####..#####........',
+    ],
+  );
+
+  // ==========================================
+  // ENEMIGO 7: LICH NIGROMANTE (LICH) - 18x18
+  // ==========================================
+  static final PixelSpriteData lich = PixelSpriteData(
+    width: 18,
+    height: 18,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': const Color(0xFFE9ECEF), // Hueso/Cráneo
+      'K': const Color(0xFFADB5BD), // Sombra hueso
+      'r': const Color(0xFF10002B), // Túnica vacío
+      'R': const Color(0xFF3C096C), // Manto púrpura oscuro
+      'e': const Color(0xFF38B000), // Ojos vil verde
+      'g': const Color(0xFF70E000), // Fuego de alma verde
+      'c': const Color(0xFFFFD166), // Tiara/Corona
+      's': const Color(0xFF5A189A), // Báculo lich
+    },
+    matrix: [
+      '.....#####c#####..',
+      '....#ccccccccc#...',
+      '...#RR#kkkkk#RR#..',
+      '..#RRR#k#e#k#RRR#.',
+      '..#RRR#kkkkk#RRR#.',
+      '..#RRR#K#g#K#RRR#.',
+      '..#RRRRkkkkkRRRR#.',
+      '...#RRR#rr#RRR#...',
+      '..#gRRRRrrRRRRg#s#',
+      '.#ggRRRRrrRRRRgg#s',
+      '.#gRRRRRRRRRRRRg#s',
+      '..#RRRRRRRRRRRR#s#',
+      '..#RRRRrrRRRRRR#s#',
+      '..#RRRRrrRRRRRR#s#',
+      '.#RRRRRrrRRRRRRR#.',
+      '.#RRRRRRRRRRRRRR#.',
+      '.#rrrrrrrrrrrrrr#.',
+      '.################.',
+    ],
+  );
+
+  // ==========================================
+  // ENEMIGO 8: ESPECTRO GÉLIDO (FROST WRAITH) - 16x18
+  // ==========================================
+  static final PixelSpriteData frostWraith = PixelSpriteData(
+    width: 16,
+    height: 18,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'i': const Color(0xFF03045E), // Manto helado oscuro
+      'I': const Color(0xFF0077B6), // Azul profundo
+      'c': const Color(0xFF00B4D8), // Cian escarcha
+      'C': const Color(0xFF90E0EF), // Hielo brillante
+      'w': const Color(0xFFE0F7FA), // Nieve/Viento
+      'e': const Color(0xFFFFFFFF), // Ojos espectrales blancos
+    },
+    matrix: [
+      '.....######.....',
+      '....#CCCCCC#....',
+      '...#CcIIIIcC#...',
+      '..#CcI#e##e#cC#.',
+      '..#CcIIccIIcC#..',
+      '..#CcIICCIICc#..',
+      '...#CcCCCCcC#...',
+      '..#w#CcIIcC#w#..',
+      '.#ww#CcIIcC#ww#.',
+      '.#w#CcIIIIcC#w#.',
+      '..#CcIIIIIIcC#..',
+      '..#CcIIIIIIcC#..',
+      '.#CcIIIIIIIIcC#.',
+      '.#CcIIIIIIIIcC#.',
+      '#CcIIIIIIIIIIcC#',
+      '#Cc#cC#cC#cC#cC#',
+      '.##.##.##.##.##.',
+      '................',
+    ],
+  );
+
+  // ==========================================
   // EDIFICIO 1: CORAZÓN DE LA ALDEA (TOWN HALL) - 24x24
   // ==========================================
   static final PixelSpriteData townHall = PixelSpriteData(
@@ -591,6 +715,135 @@ class PixelArtLibrary {
   );
 
   // ==========================================
+  // EDIFICIO 4: MINA DE CRISTALES (CRYSTAL MINE) - 24x24
+  // ==========================================
+  static final PixelSpriteData crystalMine = PixelSpriteData(
+    width: 24,
+    height: 24,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      's': const Color(0xFF4A4E69), // Piedra oscura cueva
+      'S': const Color(0xFF9A8C98), // Piedra clara
+      'w': const Color(0xFF582F0E), // Vigas de soporte
+      'W': const Color(0xFF7F4F24), // Madera marco
+      'c': const Color(0xFF00B4D8), // Cristal azul
+      'C': const Color(0xFF90E0EF), // Cristal brillo
+      'p': const Color(0xFF7209B7), // Cristal místico púrpura
+      'P': const Color(0xFFF72585), // Brillo púrpura
+      'g': const Color(0xFFFFD166), // Veta de oro
+      'k': const Color(0xFF0D1B2A), // Fondo cueva profundo
+    },
+    matrix: [
+      '.........#C#............',
+      '........#CCC#...#P#.....',
+      '.......#CcCcC#.#PPP#....',
+      '......#s#CCC#s#pPpPp#...',
+      '.....#sS#####Ss#P#p#....',
+      '....#sSsWWWWWsSs#p#.....',
+      '...#sSsWWWWWWWsSs#......',
+      '..#sSsWW#kkk#WWsSs#.....',
+      '.#sSsWW#kkkkk#WWsSs#....',
+      '#sSsWW#kkkkkkk#WWsSs#...',
+      '#sSWW#kkkkkkkkk#WWsS#...',
+      '#sWW#kkkkkkkkkkk#WWs#...',
+      '#sW#kkkkggkkkkkkk#Ws#...',
+      '#sW#kkkggggkkkkkk#Ws#...',
+      '#sW#kkkggkkkkpPkk#Ws#...',
+      '#sW#kkkkkkkkpPPpk#Ws#...',
+      '#sW#kcCkkkkk#p#kk#Ws#...',
+      '#sW#cCCckkkkkkkkk#Ws#...',
+      '#sW#cC#ckkkkkkkkk#Ws#...',
+      '#sWW#c#kkkkkkkkk#WWs#...',
+      '#sSsWW#kkkkkkkk#WWsSs#..',
+      '#sSsSsWWWWWWWWWsSsSsS#..',
+      '#SSSSSSSSSSSSSSSSSSSS#..',
+      '######################..',
+    ],
+  );
+
+  // ==========================================
+  // EDIFICIO 5: TORRE DEL TRUENO (THUNDER TOWER) - 16x24
+  // ==========================================
+  static final PixelSpriteData thunderTower = PixelSpriteData(
+    width: 16,
+    height: 24,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      's': const Color(0xFF343A40), // Piedra oscura
+      'S': const Color(0xFF6C757D), // Piedra torre
+      'y': const Color(0xFFFFE600), // Rayo/Electricidad
+      'Y': const Color(0xFFFFFFB3), // Destello eléctrico
+      'c': const Color(0xFF00F5D4), // Orbe canalizador cian
+      'C': const Color(0xFF80FFEA), // Resplandor cian
+      'm': const Color(0xFF495057), // Anillos metálicos
+      'M': const Color(0xFFADB5BD), // Metal claro
+    },
+    matrix: [
+      '.......#Y#......',
+      '......#yYY#.....',
+      '.....#YcCcY#....',
+      '....#YcCCCEY#...',
+      '.....#cCCCc#....',
+      '......#cCc#.....',
+      '.....#mMMMm#....',
+      '....#mMMMMMm#...',
+      '....#Y#sSs#Y#...',
+      '.....#ysSs#y#...',
+      '....#mMMMMMm#...',
+      '...#sSsSsSsSs#..',
+      '...#SsSsSsSsS#..',
+      '...#sS#mMm#Ss#..',
+      '...#Ss#YyY#sS#..',
+      '...#sS#mMm#Ss#..',
+      '...#SsSsSsSsS#..',
+      '...#mMMMMMMMm#..',
+      '..#sSsSsSsSsSs#.',
+      '..#SsSsSsSsSsS#.',
+      '..#sSsSsSsSsSs#.',
+      '.#SsSsSsSsSsSsS#',
+      '.#SSSSSSSSSSSSS#',
+      '.###############',
+    ],
+  );
+
+  // ==========================================
+  // EDIFICIO 6: MURALLA DE PIEDRA (STONE WALL) - 16x16
+  // ==========================================
+  static final PixelSpriteData stoneWall = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      's': const Color(0xFF495057), // Piedra base
+      'S': const Color(0xFF6C757D), // Piedra clara
+      'w': const Color(0xFF7F4F24), // Vigas de madera
+      'b': const Color(0xFF1D3557), // Estandarte
+      'g': const Color(0xFFFFD166), // Escudo/Insignia oro
+    },
+    matrix: [
+      '#SS##..##SS##..#',
+      '#Ss##..##Ss##..#',
+      '#SSSSSSSSSSSSSS#',
+      '#sSsSsSsSsSsSsS#',
+      '#SSSS#wWw#SSSSSS#',
+      '#sSsS#wWw#sSsSsS#',
+      '#SSSS#bgb#SSSSSS#',
+      '#sSsS#bgb#sSsSsS#',
+      '#SSSS#bgb#SSSSSS#',
+      '#sSsS#bbb#sSsSsS#',
+      '#SSSS#b#b#SSSSSS#',
+      '#sSsS##.##sSsSsS#',
+      '#SSSSSSSSSSSSSS#',
+      '#sSsSsSsSsSsSsS#',
+      '#SSSSSSSSSSSSSS#',
+      '################',
+    ],
+  );
+
+  // ==========================================
   // DECORACIÓN: ÁRBOL FRONDOSO - 16x18
   // ==========================================
   static final PixelSpriteData forestTree = PixelSpriteData(
@@ -627,4 +880,361 @@ class PixelArtLibrary {
       '..############..',
     ],
   );
+
+  // ==========================================
+  // ÍCONOS DE ÍTEMS PARA COMERCIO / TIENDA
+  // ==========================================
+
+  // 1. POCIÓN DE VIDA (HEALTH POTION) - 14x14
+  static final PixelSpriteData potionHealth = PixelSpriteData(
+    width: 14,
+    height: 14,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'w': const Color(0xFF7F4F24), // Corcho
+      'g': const Color(0xFFE0F7FA), // Cristal frasco
+      'r': const Color(0xFFD90429), // Líquido rojo
+      'R': const Color(0xFFEF233C), // Líquido brillante
+      'W': Colors.white,           // Destello cristal
+    },
+    matrix: [
+      '.....####.....',
+      '.....#ww#.....',
+      '....#gggg#....',
+      '....#gggg#....',
+      '..###gggg###..',
+      '.#ggWWrrrrgg#.',
+      '#ggWWrrrrRRgg#',
+      '#ggWrrrrRRRRg#',
+      '#ggrrrrRRRRRg#',
+      '#ggrrrrrrrrRg#',
+      '#ggrrrrrrrrrg#',
+      '.#ggrrrrrrrg#.',
+      '..#gggggggg#..',
+      '....######....',
+    ],
+  );
+
+  // 2. POCIÓN DE MANÁ (MANA POTION) - 14x14
+  static final PixelSpriteData potionMana = PixelSpriteData(
+    width: 14,
+    height: 14,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'w': const Color(0xFF7F4F24), // Corcho
+      'g': const Color(0xFFE0F7FA), // Cristal
+      'b': const Color(0xFF0077B6), // Azul maná
+      'B': const Color(0xFF00B4D8), // Azul brillante
+      'W': Colors.white,           // Destello
+    },
+    matrix: [
+      '.....####.....',
+      '.....#ww#.....',
+      '....#gggg#....',
+      '....#gggg#....',
+      '..###gggg###..',
+      '.#ggWWbbbbgg#.',
+      '#ggWWbbbbBBgg#',
+      '#ggWbbbbBBBBg#',
+      '#ggbbbbBBBBBg#',
+      '#ggbbbbbbbbBg#',
+      '#ggbbbbbbbbbg#',
+      '.#ggbbbbbbbg#.',
+      '..#gggggggg#..',
+      '....######....',
+    ],
+  );
+
+  // 3. CRISTAL MÁGICO / GEMA (MAGIC CRYSTAL / GEM) - 14x14
+  static final PixelSpriteData crystalGem = PixelSpriteData(
+    width: 14,
+    height: 14,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'c': const Color(0xFF00F5D4), // Turquesa cian
+      'C': const Color(0xFF70E000), // Brillo esmeralda
+      'w': Colors.white,           // Destello estelar
+      'd': const Color(0xFF0077B6), // Sombra faceta
+    },
+    matrix: [
+      '.....####.....',
+      '....#wCcc#....',
+      '...#wwCCccc#..',
+      '..#wwwCCCccc#.',
+      '.#wwwwCCCCccc#',
+      '#wwwwwCCCCddd#',
+      '#wCCCdddddddd#',
+      '.#CCCddddddd#.',
+      '..#CCdddddd#..',
+      '...#Cddddd#...',
+      '....#Cddd#....',
+      '.....#Cd#.....',
+      '......##......',
+      '..............',
+    ],
+  );
+
+  // 4. MONEDA DE ORO (GOLD COIN) - 14x14
+  static final PixelSpriteData goldCoin = PixelSpriteData(
+    width: 14,
+    height: 14,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'g': const Color(0xFFFFB703), // Oro base
+      'G': const Color(0xFFFFE6A7), // Oro brillo
+      'd': const Color(0xFFFB8500), // Oro sombra
+      'W': Colors.white,           // Destello
+    },
+    matrix: [
+      '....######....',
+      '..#GGGGGGGG#..',
+      '.#GGWGGGGGGGd#',
+      '#GGWWgGGGggggd#',
+      '#GGWg#gggg#ggd#',
+      '#GGGg#gggg#ggd#',
+      '#GGGg#gggg#ggd#',
+      '#GGGg######ggd#',
+      '#GGGgggggggggd#',
+      '#GGGgggggggggd#',
+      '.#GGggggggggd#',
+      '..#dddddddd#..',
+      '....######....',
+      '..............',
+    ],
+  );
+
+  // 5. COFRE DE TESORO (TREASURE CHEST) - 16x16
+  static final PixelSpriteData treasureChest = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'w': const Color(0xFF7F4F24), // Madera cofre
+      'W': const Color(0xFF936639), // Madera clara
+      'g': const Color(0xFFFFD166), // Herrajes oro
+      'G': const Color(0xFFFFE6A7), // Oro brillo
+      'c': const Color(0xFF00F5D4), // Gema de la cerradura
+    },
+    matrix: [
+      '.....######.....',
+      '....#WWWWWW#....',
+      '...#WwWwWwWw#...',
+      '..#gggggggggg#..',
+      '..#gGgGgGgGgG#..',
+      '..#wWwWwWwWwW#..',
+      '..#WwWwWwWwWw#..',
+      '..#gggggggggg#..',
+      '..#gGg#cCc#gG#..',
+      '..#gGg#CCC#gG#..',
+      '..#wWw#cCc#Ww#..',
+      '..#WwWw###wWw#..',
+      '..#gggggggggg#..',
+      '..#wWwWwWwWwW#..',
+      '..#WwWwWwWwWw#..',
+      '..############..',
+    ],
+  );
+
+  // 6. ESPADA LEGENDARIA (LEGENDARY SWORD) - 16x16
+  static final PixelSpriteData legendarySword = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      's': const Color(0xFFC0C0D0), // Hoja acero
+      'S': Colors.white,           // Filo resplandeciente
+      'g': const Color(0xFFFFD166), // Empuñadura oro
+      'r': const Color(0xFFD90429), // Gema pomo
+      'b': const Color(0xFF00B4D8), // Guarda mística
+    },
+    matrix: [
+      '..............S#',
+      '.............Ss#',
+      '............Ss#.',
+      '...........Ss#..',
+      '..........Ss#...',
+      '.........Ss#....',
+      '........Ss#.....',
+      '.......Ss#......',
+      '......Ss#.......',
+      '.....b#b#.......',
+      '....#bbb#.......',
+      '...#ggggg#......',
+      '....#g#g#.......',
+      '.....#r#........',
+      '......##........',
+      '................',
+    ],
+  );
+
+  // 7. ESCUDO REAL (ROYAL SHIELD) - 16x16
+  static final PixelSpriteData royalShield = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'g': const Color(0xFFFFD166), // Borde oro
+      'G': const Color(0xFFFFE6A7),
+      'b': const Color(0xFF1D3557), // Fondo azul
+      'B': const Color(0xFF457B9D),
+      'w': Colors.white,           // Blasón central
+      'r': const Color(0xFFD90429),
+    },
+    matrix: [
+      '..############..',
+      '.#gGgGgGgGgGgG#.',
+      '#gGbbbbbbbbGGg#',
+      '#gGbBbwwbBbGGg#',
+      '#gGbwwWWbbGGg#',
+      '#gGbwwrRwwbGGg#',
+      '#gGbwwrRwwbGGg#',
+      '#gGbbwwWWbbGGg#',
+      '#gGbBbwwbBbGGg#',
+      '.#gGbbbbbbGGg#..',
+      '..#gGbbbbGGg#...',
+      '...#gGbbGGg#....',
+      '....#gGGg#......',
+      '.....#gG#.......',
+      '......##........',
+      '................',
+    ],
+  );
+
+  // 8. LIBRO DE HECHIZOS (SPELLBOOK) - 16x16
+  static final PixelSpriteData spellBook = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'p': const Color(0xFF5A189A), // Cuero púrpura
+      'P': const Color(0xFF7B2CBF),
+      'g': const Color(0xFFFFD166), // Esquinas oro / estrella
+      'w': const Color(0xFFE9ECEF), // Páginas
+      'r': const Color(0xFFD90429), // Marcador de páginas rojo
+    },
+    matrix: [
+      '.....######.....',
+      '....#ggPPgg#....',
+      '...#gPPPPPPg#...',
+      '..#gPP#g#PPg#...',
+      '..#PPPgggPPP#...',
+      '..#PPggGggPP#...',
+      '..#PPPgggPPP#...',
+      '..#gPP#g#PPg#...',
+      '..#gPPPPPPg#w#..',
+      '...#ggPPgg#ww#..',
+      '....#PPPP#ww#r#.',
+      '....#PPPP#w#rr#.',
+      '....#PPPP##.##..',
+      '....#pppp#......',
+      '....######......',
+      '................',
+    ],
+  );
+
+  // ==========================================
+  // 9. NPCS ISEKAI (HERRERO, COMERCIANTE, GREMIO, GUARDIÁN)
+  // ==========================================
+  static final PixelSpriteData npcBlacksmith = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      's': const Color(0xFF8D99AE), // Delantal de cuero y hierro
+      'S': const Color(0xFF2B2D42),
+      'o': const Color(0xFFFF5400), // Martillo caliente
+      'g': const Color(0xFFFFD166),
+    },
+    matrix: [
+      '.....######.....',
+      '....#kkkkkk#....',
+      '...#k#e##e#k#...',
+      '...#kkkkkkkk#...',
+      '....#ssssss#....',
+      '...#SssssssS#...',
+      '..#SSssssssSS#..',
+      '..#SSssssssSS#g#',
+      '..#S#ssssss#S#o#',
+      '...#ssssssss#..#',
+      '...#SSSSSSSS#...',
+      '....#SS##SS#....',
+      '....#SS##SS#....',
+      '...#SSS##SSS#...',
+      '..####....####..',
+      '................',
+    ],
+  );
+
+  static final PixelSpriteData npcMerchant = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      't': const Color(0xFF2A9D8F), // Túnica de mercader turquesa
+      'T': const Color(0xFFE76F51), // Sombrero de viaje
+      'g': const Color(0xFFFFD166), // Sacos de oro
+    },
+    matrix: [
+      '....########....',
+      '..#TTTTTTTTTT#..',
+      '..#TT######TT#..',
+      '...#kkkkkkkk#...',
+      '...#k#e##e#k#...',
+      '...#kkkkkkkk#...',
+      '..#tttttttttt#..',
+      '.#tttttttttttt#.',
+      '#g#tttttttttt#g#',
+      '#gg#tttttttt#gg#',
+      '.#g#tttttttt#g#.',
+      '..#tttttttttt#..',
+      '...#tttttttt#...',
+      '....#tt##tt#....',
+      '....####.####...',
+      '................',
+    ],
+  );
+
+  static final PixelSpriteData npcQuestGiver = PixelSpriteData(
+    width: 16,
+    height: 16,
+    palette: {
+      '.': cTrans,
+      '#': cBlack,
+      'k': cSkin,
+      'w': const Color(0xFFEDF2F4), // Barba blanca sabio
+      'b': const Color(0xFF1D3557), // Túnica arcana azul
+      'g': const Color(0xFFFFD166), // Pergamino de misión
+    },
+    matrix: [
+      '.....######.....',
+      '....#bbbbbb#....',
+      '...#bkkkkkkb#...',
+      '...#k#e##e#k#...',
+      '...#kwwwwwwk#...',
+      '...#wwwwwwww#...',
+      '..#bbwwwwwwbb#..',
+      '.#bbb#bbbb#bbb#.',
+      '.#bbb#gggg#bbb#.',
+      '.#bbb#gggg#bbb#.',
+      '..#bb#gggg#bb#..',
+      '...#bbbbbbbb#...',
+      '...#bbbbbbbb#...',
+      '....#bb##bb#....',
+      '....####.####...',
+      '................',
+    ],
+  );
 }
+
