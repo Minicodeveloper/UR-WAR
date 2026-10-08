@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'realm_illustration.dart';
 import 'pixel_art_data.dart';
 
-/// Dibuja eficientemente una matriz de pixel art en un Canvas con soporte para
-/// escalado, volteo horizontal (orientación), efectos de impacto (daño) y sombras.
+/// Compatibility adapter: existing entity assets now use smooth vector art.
+/// Scaling, facing, hit flashes and shadows preserve the original game API.
 class PixelSpritePainter extends CustomPainter {
   final PixelSpriteData sprite;
   final double pixelSize;
@@ -47,34 +48,19 @@ class PixelSpritePainter extends CustomPainter {
       canvas.scale(-1, 1);
     }
 
-    final paint = Paint()..isAntiAlias = false;
-
-    for (int y = 0; y < sprite.matrix.length; y++) {
-      final row = sprite.matrix[y];
-      for (int x = 0; x < row.length; x++) {
-        final char = row[x];
-        if (char == '.') continue; // Transparente
-
-        Color? color = sprite.palette[char];
-        if (color == null || color.a == 0) continue;
-
-        // Efecto de tinte (por ejemplo, destello rojo al recibir daño)
-        if (tintColor != null && tintIntensity > 0) {
-          color = Color.lerp(color, tintColor, tintIntensity) ?? color;
-        }
-
-        paint.color = color;
-        canvas.drawRect(
-          Rect.fromLTWH(
-            x * pixelSize,
-            y * pixelSize,
-            pixelSize,
-            pixelSize,
+    final tinted = tintColor != null && tintIntensity > 0;
+    if (tinted) {
+      canvas.saveLayer(
+        Rect.fromLTWH(0, 0, totalWidth, totalHeight),
+        Paint()
+          ..colorFilter = ColorFilter.mode(
+            tintColor!.withValues(alpha: tintIntensity.clamp(0, 1)),
+            BlendMode.srcATop,
           ),
-          paint,
-        );
-      }
+      );
     }
+    RealmIllustration.draw(canvas, Size(totalWidth, totalHeight), sprite);
+    if (tinted) canvas.restore();
 
     canvas.restore();
   }
@@ -85,7 +71,8 @@ class PixelSpritePainter extends CustomPainter {
         oldDelegate.pixelSize != pixelSize ||
         oldDelegate.flipX != flipX ||
         oldDelegate.tintColor != tintColor ||
-        oldDelegate.tintIntensity != tintIntensity;
+        oldDelegate.tintIntensity != tintIntensity ||
+        oldDelegate.drawShadow != drawShadow;
   }
 }
 
@@ -133,10 +120,6 @@ class PixelSpriteWidget extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      width: width,
-      height: height,
-      child: child,
-    );
+    return SizedBox(width: width, height: height, child: child);
   }
 }

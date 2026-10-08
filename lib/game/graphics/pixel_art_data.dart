@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 
 /// Define un sprite de pixel art de alta precisión basado en una matriz de caracteres.
 class PixelSpriteData {
+  final String visualId;
+  final double phase;
+  final bool moving, attacking, facingAway;
   final int width;
   final int height;
   final List<String> matrix;
   final Map<String, Color> palette;
 
   const PixelSpriteData({
+    this.visualId = '',
+    this.phase = 0,
+    this.moving = false,
+    this.attacking = false,
+    this.facingAway = false,
     required this.width,
     required this.height,
     required this.matrix,
@@ -30,6 +38,7 @@ class PixelArtLibrary {
   // 1. CABALLERO / PALADÍN (KNIGHT) - 16x16
   // ==========================================
   static final PixelSpriteData knightIdle = PixelSpriteData(
+    visualId: 'knightIdle',
     width: 16,
     height: 16,
     palette: {
@@ -66,6 +75,7 @@ class PixelArtLibrary {
   );
 
   static final PixelSpriteData knightAttack = PixelSpriteData(
+    visualId: 'knightAttack',
     width: 18,
     height: 16,
     palette: {
@@ -104,6 +114,7 @@ class PixelArtLibrary {
   // 2. ARQUERA / CAZADORA (RANGER) - 16x16
   // ==========================================
   static final PixelSpriteData rangerIdle = PixelSpriteData(
+    visualId: 'rangerIdle',
     width: 16,
     height: 16,
     palette: {
@@ -112,7 +123,7 @@ class PixelArtLibrary {
       'h': const Color(0xFF2B9348), // Capucha verde
       'H': const Color(0xFF55A630), // Capucha clara
       'f': const Color(0xFFFFD166), // Pelo rubio
-      'k': cSkin,                  // Piel
+      'k': cSkin, // Piel
       'K': cSkinShadow,
       'e': const Color(0xFF007200), // Ojos verdes
       't': const Color(0xFF6B705C), // Túnica cuero verde/marrón
@@ -141,6 +152,7 @@ class PixelArtLibrary {
   );
 
   static final PixelSpriteData rangerAttack = PixelSpriteData(
+    visualId: 'rangerAttack',
     width: 18,
     height: 16,
     palette: {
@@ -156,7 +168,7 @@ class PixelArtLibrary {
       'B': const Color(0xFF936639),
       'w': const Color(0xFFDDB892),
       'a': const Color(0xFFB08968), // Arco de madera
-      's': Colors.white,          // Cuerda
+      's': Colors.white, // Cuerda
     },
     matrix: [
       '....########...a#.',
@@ -182,6 +194,7 @@ class PixelArtLibrary {
   // 3. MAGO ARCANO (MAGE) - 16x16
   // ==========================================
   static final PixelSpriteData mageIdle = PixelSpriteData(
+    visualId: 'mageIdle',
     width: 16,
     height: 16,
     palette: {
@@ -222,6 +235,7 @@ class PixelArtLibrary {
   // 4. CLÉRIGA / GUARDIANA (VALKYRIE) - 16x16
   // ==========================================
   static final PixelSpriteData clericIdle = PixelSpriteData(
+    visualId: 'clericIdle',
     width: 16,
     height: 16,
     palette: {
@@ -232,7 +246,7 @@ class PixelArtLibrary {
       'h': const Color(0xFF8338EC), // Pelo violeta
       'k': cSkin,
       'e': const Color(0xFF3A86FF), // Ojos zafiro
-      'w': Colors.white,           // Coraza blanca celestial
+      'w': Colors.white, // Coraza blanca celestial
       'W': const Color(0xFFD6E2E9),
       'b': const Color(0xFF3A86FF), // Ribetes celestes
       'm': const Color(0xFF4A4E69), // Martillo sagrado
@@ -262,6 +276,7 @@ class PixelArtLibrary {
   // ENEMIGO 1: GOBLIN SAQUEADOR - 16x16
   // ==========================================
   static final PixelSpriteData goblin = PixelSpriteData(
+    visualId: 'goblin',
     width: 16,
     height: 16,
     palette: {
@@ -300,6 +315,7 @@ class PixelArtLibrary {
   // ENEMIGO 2: ORCO BERSERKER - 18x18
   // ==========================================
   static final PixelSpriteData orc = PixelSpriteData(
+    visualId: 'orc',
     width: 18,
     height: 18,
     palette: {
@@ -310,7 +326,7 @@ class PixelArtLibrary {
       'r': const Color(0xFFBC4749), // Pintura de guerra roja
       'h': const Color(0xFF4A4E69), // Casco con pinchos
       'e': const Color(0xFFFFD166), // Ojos amarillos furia
-      'w': Colors.white,           // Colmillos
+      'w': Colors.white, // Colmillos
       'c': const Color(0xFF7F4F24), // Armadura cuero
       'C': const Color(0xFF43281C), // Cuero oscuro
       'm': const Color(0xFF222222), // Garrote pesado
@@ -342,6 +358,7 @@ class PixelArtLibrary {
   // ENEMIGO 3: ESQUELETO TIRADOR - 16x16
   // ==========================================
   static final PixelSpriteData skeleton = PixelSpriteData(
+    visualId: 'skeleton',
     width: 16,
     height: 16,
     palette: {
@@ -353,7 +370,7 @@ class PixelArtLibrary {
       'e': const Color(0xFFFF0054), // Ojo espectral rojo
       'c': const Color(0xFF4A4E69), // Harapos / Capa
       'w': const Color(0xFF8B5A2B), // Arco de madera
-      'S': Colors.white,          // Cuerda
+      'S': Colors.white, // Cuerda
     },
     matrix: [
       '.....######.....',
@@ -379,6 +396,7 @@ class PixelArtLibrary {
   // ENEMIGO 4: NIGROMANTE OSCURO - 16x16
   // ==========================================
   static final PixelSpriteData necromancer = PixelSpriteData(
+    visualId: 'necromancer',
     width: 16,
     height: 16,
     palette: {
@@ -417,6 +435,7 @@ class PixelArtLibrary {
   // ENEMIGO 5: TITÁN DESTRUCTOR (BOSS) - 24x24
   // ==========================================
   static final PixelSpriteData bossTitan = PixelSpriteData(
+    visualId: 'bossTitan',
     width: 24,
     height: 24,
     palette: {
@@ -465,6 +484,7 @@ class PixelArtLibrary {
   // ENEMIGO 6: DRAGÓN DE MAGMA (MAGMA DRAGON) - 24x24
   // ==========================================
   static final PixelSpriteData magmaDragon = PixelSpriteData(
+    visualId: 'magmaDragon',
     width: 24,
     height: 24,
     palette: {
@@ -511,6 +531,7 @@ class PixelArtLibrary {
   // ENEMIGO 7: LICH NIGROMANTE (LICH) - 18x18
   // ==========================================
   static final PixelSpriteData lich = PixelSpriteData(
+    visualId: 'lich',
     width: 18,
     height: 18,
     palette: {
@@ -551,6 +572,7 @@ class PixelArtLibrary {
   // ENEMIGO 8: ESPECTRO GÉLIDO (FROST WRAITH) - 16x18
   // ==========================================
   static final PixelSpriteData frostWraith = PixelSpriteData(
+    visualId: 'frostWraith',
     width: 16,
     height: 18,
     palette: {
@@ -589,6 +611,7 @@ class PixelArtLibrary {
   // EDIFICIO 1: CORAZÓN DE LA ALDEA (TOWN HALL) - 24x24
   // ==========================================
   static final PixelSpriteData townHall = PixelSpriteData(
+    visualId: 'townHall',
     width: 24,
     height: 24,
     palette: {
@@ -639,6 +662,7 @@ class PixelArtLibrary {
   // EDIFICIO 2: TORRE DE GUARDIA DEFENSIVA - 16x20
   // ==========================================
   static final PixelSpriteData watchtower = PixelSpriteData(
+    visualId: 'watchtower',
     width: 16,
     height: 20,
     palette: {
@@ -681,6 +705,7 @@ class PixelArtLibrary {
   // EDIFICIO 3: CABAÑA DE ALDEANO - 16x16
   // ==========================================
   static final PixelSpriteData cottage = PixelSpriteData(
+    visualId: 'cottage',
     width: 16,
     height: 16,
     palette: {
@@ -718,6 +743,7 @@ class PixelArtLibrary {
   // EDIFICIO 4: MINA DE CRISTALES (CRYSTAL MINE) - 24x24
   // ==========================================
   static final PixelSpriteData crystalMine = PixelSpriteData(
+    visualId: 'crystalMine',
     width: 24,
     height: 24,
     palette: {
@@ -766,6 +792,7 @@ class PixelArtLibrary {
   // EDIFICIO 5: TORRE DEL TRUENO (THUNDER TOWER) - 16x24
   // ==========================================
   static final PixelSpriteData thunderTower = PixelSpriteData(
+    visualId: 'thunderTower',
     width: 16,
     height: 24,
     palette: {
@@ -812,6 +839,7 @@ class PixelArtLibrary {
   // EDIFICIO 6: MURALLA DE PIEDRA (STONE WALL) - 16x16
   // ==========================================
   static final PixelSpriteData stoneWall = PixelSpriteData(
+    visualId: 'stoneWall',
     width: 16,
     height: 16,
     palette: {
@@ -847,6 +875,7 @@ class PixelArtLibrary {
   // DECORACIÓN: ÁRBOL FRONDOSO - 16x18
   // ==========================================
   static final PixelSpriteData forestTree = PixelSpriteData(
+    visualId: 'forestTree',
     width: 16,
     height: 18,
     palette: {
@@ -887,6 +916,7 @@ class PixelArtLibrary {
 
   // 1. POCIÓN DE VIDA (HEALTH POTION) - 14x14
   static final PixelSpriteData potionHealth = PixelSpriteData(
+    visualId: 'potionHealth',
     width: 14,
     height: 14,
     palette: {
@@ -896,7 +926,7 @@ class PixelArtLibrary {
       'g': const Color(0xFFE0F7FA), // Cristal frasco
       'r': const Color(0xFFD90429), // Líquido rojo
       'R': const Color(0xFFEF233C), // Líquido brillante
-      'W': Colors.white,           // Destello cristal
+      'W': Colors.white, // Destello cristal
     },
     matrix: [
       '.....####.....',
@@ -918,6 +948,7 @@ class PixelArtLibrary {
 
   // 2. POCIÓN DE MANÁ (MANA POTION) - 14x14
   static final PixelSpriteData potionMana = PixelSpriteData(
+    visualId: 'potionMana',
     width: 14,
     height: 14,
     palette: {
@@ -927,7 +958,7 @@ class PixelArtLibrary {
       'g': const Color(0xFFE0F7FA), // Cristal
       'b': const Color(0xFF0077B6), // Azul maná
       'B': const Color(0xFF00B4D8), // Azul brillante
-      'W': Colors.white,           // Destello
+      'W': Colors.white, // Destello
     },
     matrix: [
       '.....####.....',
@@ -949,6 +980,7 @@ class PixelArtLibrary {
 
   // 3. CRISTAL MÁGICO / GEMA (MAGIC CRYSTAL / GEM) - 14x14
   static final PixelSpriteData crystalGem = PixelSpriteData(
+    visualId: 'crystalGem',
     width: 14,
     height: 14,
     palette: {
@@ -956,7 +988,7 @@ class PixelArtLibrary {
       '#': cBlack,
       'c': const Color(0xFF00F5D4), // Turquesa cian
       'C': const Color(0xFF70E000), // Brillo esmeralda
-      'w': Colors.white,           // Destello estelar
+      'w': Colors.white, // Destello estelar
       'd': const Color(0xFF0077B6), // Sombra faceta
     },
     matrix: [
@@ -979,6 +1011,7 @@ class PixelArtLibrary {
 
   // 4. MONEDA DE ORO (GOLD COIN) - 14x14
   static final PixelSpriteData goldCoin = PixelSpriteData(
+    visualId: 'goldCoin',
     width: 14,
     height: 14,
     palette: {
@@ -987,7 +1020,7 @@ class PixelArtLibrary {
       'g': const Color(0xFFFFB703), // Oro base
       'G': const Color(0xFFFFE6A7), // Oro brillo
       'd': const Color(0xFFFB8500), // Oro sombra
-      'W': Colors.white,           // Destello
+      'W': Colors.white, // Destello
     },
     matrix: [
       '....######....',
@@ -1009,6 +1042,7 @@ class PixelArtLibrary {
 
   // 5. COFRE DE TESORO (TREASURE CHEST) - 16x16
   static final PixelSpriteData treasureChest = PixelSpriteData(
+    visualId: 'treasureChest',
     width: 16,
     height: 16,
     palette: {
@@ -1042,13 +1076,14 @@ class PixelArtLibrary {
 
   // 6. ESPADA LEGENDARIA (LEGENDARY SWORD) - 16x16
   static final PixelSpriteData legendarySword = PixelSpriteData(
+    visualId: 'legendarySword',
     width: 16,
     height: 16,
     palette: {
       '.': cTrans,
       '#': cBlack,
       's': const Color(0xFFC0C0D0), // Hoja acero
-      'S': Colors.white,           // Filo resplandeciente
+      'S': Colors.white, // Filo resplandeciente
       'g': const Color(0xFFFFD166), // Empuñadura oro
       'r': const Color(0xFFD90429), // Gema pomo
       'b': const Color(0xFF00B4D8), // Guarda mística
@@ -1075,6 +1110,7 @@ class PixelArtLibrary {
 
   // 7. ESCUDO REAL (ROYAL SHIELD) - 16x16
   static final PixelSpriteData royalShield = PixelSpriteData(
+    visualId: 'royalShield',
     width: 16,
     height: 16,
     palette: {
@@ -1084,7 +1120,7 @@ class PixelArtLibrary {
       'G': const Color(0xFFFFE6A7),
       'b': const Color(0xFF1D3557), // Fondo azul
       'B': const Color(0xFF457B9D),
-      'w': Colors.white,           // Blasón central
+      'w': Colors.white, // Blasón central
       'r': const Color(0xFFD90429),
     },
     matrix: [
@@ -1109,6 +1145,7 @@ class PixelArtLibrary {
 
   // 8. LIBRO DE HECHIZOS (SPELLBOOK) - 16x16
   static final PixelSpriteData spellBook = PixelSpriteData(
+    visualId: 'spellBook',
     width: 16,
     height: 16,
     palette: {
@@ -1144,6 +1181,7 @@ class PixelArtLibrary {
   // 9. NPCS ISEKAI (HERRERO, COMERCIANTE, GREMIO, GUARDIÁN)
   // ==========================================
   static final PixelSpriteData npcBlacksmith = PixelSpriteData(
+    visualId: 'npcBlacksmith',
     width: 16,
     height: 16,
     palette: {
@@ -1176,6 +1214,7 @@ class PixelArtLibrary {
   );
 
   static final PixelSpriteData npcMerchant = PixelSpriteData(
+    visualId: 'npcMerchant',
     width: 16,
     height: 16,
     palette: {
@@ -1207,6 +1246,7 @@ class PixelArtLibrary {
   );
 
   static final PixelSpriteData npcQuestGiver = PixelSpriteData(
+    visualId: 'npcQuestGiver',
     width: 16,
     height: 16,
     palette: {
@@ -1237,4 +1277,3 @@ class PixelArtLibrary {
     ],
   );
 }
-

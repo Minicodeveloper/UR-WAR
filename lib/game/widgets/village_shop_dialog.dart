@@ -4,423 +4,312 @@ import '../models/entity.dart';
 
 class VillageShopDialog extends StatefulWidget {
   final GameEngine engine;
-
   const VillageShopDialog({super.key, required this.engine});
-
   @override
   State<VillageShopDialog> createState() => _VillageShopDialogState();
 }
 
 class _VillageShopDialogState extends State<VillageShopDialog>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
+  late final TabController _tabs = TabController(length: 3, vsync: this);
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabs.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.engine,
-      builder: (context, _) {
-        final player = widget.engine.player;
-
-        return Dialog(
-          backgroundColor: const Color(0xFF161A23),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFFFFD166), width: 2),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540, maxHeight: 620),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Encabezado con Nivel, Puntos y Oro
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.engine,
+    builder: (context, _) {
+      final player = widget.engine.player;
+      return Dialog(
+        insetPadding: const EdgeInsets.all(12),
+        backgroundColor: const Color(0xFF1C201F),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 650),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.storefront, color: Color(0xFFC7AD79)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.shield_rounded, color: Color(0xFFFFD166), size: 28),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Nivel ${player.level} - ${player.playerClass.name}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'XP: ${player.xp}/${player.xpToNextLevel} | Puntos: ${player.skillPoints}',
-                                style: const TextStyle(color: Colors.white60, fontSize: 11),
-                              ),
-                            ],
+                          const Text(
+                            'ARMERÍA DE LA ALDEA',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Cinzel',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Nivel ${player.level} · ${player.skillPoints} puntos · ${player.gold} oro',
+                            style: const TextStyle(
+                              color: Color(0xFFC7AD79),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2B2D42),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFFFD166), width: 1.5),
-                        ),
-                        child: Row(
-                          children: [
-                            const Text('🪙 ', style: TextStyle(fontSize: 14)),
-                            Text(
-                              '${player.gold}',
-                              style: const TextStyle(
-                                color: Color(0xFFFFD166),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Barra de pestañas
-                  TabBar(
-                    controller: _tabController,
-                    indicatorColor: const Color(0xFFFFD166),
-                    labelColor: const Color(0xFFFFD166),
-                    unselectedLabelColor: Colors.white60,
-                    tabs: const [
-                      Tab(text: 'MEJORAS'),
-                      Tab(text: 'CONSTRUIR'),
-                      Tab(text: 'HABILIDADES'),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Contenido de las pestañas
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        // Pestaña 1: Mejoras generales
-                        _buildUpgradesTab(widget.engine, player),
-
-                        // Pestaña 2: Construcción de estructuras
-                        _buildConstructionTab(widget.engine, player),
-
-                        // Pestaña 3: Árbol de Habilidades RPG
-                        _buildSkillTreeTab(widget.engine, player),
-                      ],
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2B2D42),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.white24),
-                        ),
-                      ),
+                    IconButton(
+                      tooltip: 'Cerrar tienda',
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('VOLVER A LA BATALLA'),
+                      icon: const Icon(Icons.close),
                     ),
+                  ],
+                ),
+                TabBar(
+                  controller: _tabs,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelColor: const Color(0xFFC7AD79),
+                  unselectedLabelColor: Colors.white60,
+                  tabs: const [
+                    Tab(text: 'MEJORAS'),
+                    Tab(text: 'CONSTRUIR'),
+                    Tab(text: 'HABILIDADES'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabs,
+                    children: [_upgrades(), _buildings(), _skills()],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('VOLVER A LA BATALLA'),
+                  ),
+                ),
+              ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
 
-  Widget _buildUpgradesTab(GameEngine engine, PlayerEntity player) {
+  Widget _upgrades() {
+    final e = widget.engine;
     return ListView(
       children: [
-        _ShopItemTile(
-          icon: Icons.shield_rounded,
-          iconColor: const Color(0xFF00BBF9),
-          title: 'Reparar Gran Salón de la Aldea',
-          description: 'Restaura +300 HP a la estructura central y +150 HP a torres.',
-          cost: 75,
-          canAfford: player.gold >= 75,
-          onBuy: () => engine.repairVillage(75, 300),
+        _item(
+          'Reparar la aldea',
+          'Recupera 300 de salud del salón y 150 de las demás defensas.',
+          Icons.fort,
+          75,
+          () => e.repairVillage(75, 300),
+          enabled: e.villageBuildings.any(
+            (b) => !b.isDead && b.health < b.maxHealth,
+          ),
         ),
-        _ShopItemTile(
-          icon: Icons.favorite_rounded,
-          iconColor: const Color(0xFFEF233C),
-          title: 'Poción Mayor de Vitalidad',
-          description: 'Restaura el 60% de los puntos de salud de tu héroe.',
-          cost: 50,
-          canAfford: player.gold >= 50 && player.health < player.maxHealth,
-          onBuy: () => engine.healHero(50),
+        _item(
+          'Poción de vitalidad',
+          'Restaura el 60% de la salud de tu héroe.',
+          Icons.favorite,
+          60,
+          () => e.healHero(60),
+          enabled: e.player.health < e.player.maxHealth,
         ),
-        _ShopItemTile(
-          icon: Icons.colorize_rounded,
-          iconColor: const Color(0xFFFF9F1C),
-          title: 'Forjar Acero (+25% Daño)',
-          description: 'Incrementa permanentemente todo el poder bélico del héroe.',
-          cost: 100,
-          canAfford: player.gold >= 100,
-          onBuy: () => engine.upgradeHeroDamage(100),
+        _item(
+          'Forjar acero',
+          '+25% de daño durante esta partida.',
+          Icons.colorize,
+          120,
+          () => e.upgradeHeroDamage(120),
         ),
-        _ShopItemTile(
-          icon: Icons.directions_run_rounded,
-          iconColor: const Color(0xFF06D6A0),
-          title: 'Botas de la Tempestad (+15% Vel)',
-          description: 'Aumenta permanentemente la velocidad de desplazamiento.',
-          cost: 90,
-          canAfford: player.gold >= 90,
-          onBuy: () => engine.upgradeHeroSpeed(90),
+        _item(
+          'Botas de la tempestad',
+          '+15% de velocidad durante esta partida.',
+          Icons.directions_run,
+          90,
+          () => e.upgradeHeroSpeed(90),
         ),
       ],
     );
   }
 
-  Widget _buildConstructionTab(GameEngine engine, PlayerEntity player) {
+  Widget _buildings() => ListView(
+    children: [
+      const Padding(
+        padding: EdgeInsets.all(4),
+        child: Text(
+          'Elige una defensa y después toca su posición en el campo. Solo se cobra al confirmar.',
+          style: TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+      ),
+      for (final type in [
+        BuildingType.watchtower,
+        BuildingType.frostTower,
+        BuildingType.cannonTower,
+        BuildingType.barricade,
+        BuildingType.goldMine,
+      ])
+        _item(
+          BuildingSpec.forType(type).name,
+          _description(type),
+          _icon(type),
+          BuildingSpec.forType(type).cost,
+          () {
+            if (widget.engine.beginConstruction(
+              type,
+              BuildingSpec.forType(type).cost,
+            )) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+    ],
+  );
+
+  Widget _skills() {
+    final e = widget.engine;
     return ListView(
       children: [
-        _ShopItemTile(
-          icon: Icons.fort_rounded,
-          iconColor: const Color(0xFFFFD166),
-          title: 'Construir Torre de Vigía',
-          description: 'Dispara flechas automáticas defensivas a los invasores que se acerquen.',
-          cost: 100,
-          canAfford: player.gold >= 100,
-          onBuy: () => engine.buildStructure(BuildingType.watchtower, 100),
-        ),
-        _ShopItemTile(
-          icon: Icons.line_style_rounded,
-          iconColor: const Color(0xFF8D5B2E),
-          title: 'Construir Empalizada de Madera',
-          description: 'Estructura defensiva pesada que bloquea el paso de los enemigos.',
-          cost: 50,
-          canAfford: player.gold >= 50,
-          onBuy: () => engine.buildStructure(BuildingType.barricade, 50),
-        ),
-        _ShopItemTile(
-          icon: Icons.monetization_on_rounded,
-          iconColor: const Color(0xFF55A630),
-          title: 'Construir Mina de Oro',
-          description: 'Genera +15 de Oro automáticamente para la aldea cada 10 segundos.',
-          cost: 150,
-          canAfford: player.gold >= 150,
-          onBuy: () => engine.buildStructure(BuildingType.goldMine, 150),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSkillTreeTab(GameEngine engine, PlayerEntity player) {
-    final skillTree = player.playerClass.skillTree;
-
-    return ListView.builder(
-      itemCount: skillTree.length,
-      itemBuilder: (context, index) {
-        final skill = skillTree[index];
-        final isUnlocked = player.unlockedSkillIds.contains(skill.id);
-        final canUnlock = player.skillPoints > 0 &&
-            player.level >= skill.requiredLevel &&
-            !isUnlocked;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isUnlocked
-                ? const Color(0xFF2D6A4F).withValues(alpha: 0.3)
-                : const Color(0xFF1E2330),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isUnlocked ? const Color(0xFF55A630) : Colors.white12,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(skill.icon, color: isUnlocked ? const Color(0xFFFFD166) : Colors.white38, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        for (final skill in e.player.playerClass.skillTree)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: _tile,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          skill.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+                    Icon(skill.icon, color: const Color(0xFFC7AD79), size: 22),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        skill.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Cinzel',
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 6),
-                        if (skill.isUltimate)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF7B2CBF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text('ULTIMATE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      skill.description,
-                      style: const TextStyle(color: Colors.white60, fontSize: 11),
-                    ),
-                    Text(
-                      'Nivel requerido: ${skill.requiredLevel}',
-                      style: TextStyle(
-                        color: player.level >= skill.requiredLevel ? Colors.greenAccent : Colors.redAccent,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: canUnlock ? () => engine.unlockSkill(skill.id) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD166),
-                  foregroundColor: Colors.black,
-                  disabledBackgroundColor: Colors.white12,
-                  disabledForegroundColor: Colors.white30,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                const SizedBox(height: 5),
+                Text(
+                  skill.description,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
-                child: Text(
-                  isUnlocked ? 'DESBLOQUEADA' : 'DESBLOQUEAR',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  children: [
+                    Text(
+                      'Requiere nivel ${skill.requiredLevel}',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11,
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed:
+                          e.player.skillPoints > 0 &&
+                              e.player.level >= skill.requiredLevel &&
+                              !e.player.unlockedSkillIds.contains(skill.id)
+                          ? () => e.unlockSkill(skill.id)
+                          : null,
+                      child: Text(
+                        e.player.unlockedSkillIds.contains(skill.id)
+                            ? 'Aprendida'
+                            : 'Aprender · 1 punto',
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+      ],
     );
   }
-}
 
-class _ShopItemTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String description;
-  final int cost;
-  final bool canAfford;
-  final VoidCallback onBuy;
-
-  const _ShopItemTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.description,
-    required this.cost,
-    required this.canAfford,
-    required this.onBuy,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E2330),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: canAfford ? Colors.white12 : Colors.white10,
+  Widget _item(
+    String title,
+    String description,
+    IconData icon,
+    int cost,
+    VoidCallback action, {
+    bool enabled = true,
+  }) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: _tile,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: const Color(0xFFC7AD79), size: 23),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Cinzel',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 26),
+        const SizedBox(height: 5),
+        Text(
+          description,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton(
+            onPressed: enabled && widget.engine.player.gold >= cost
+                ? action
+                : null,
+            child: Text('$cost oro'),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 11,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: canAfford ? onBuy : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFD166),
-              foregroundColor: Colors.black,
-              disabledBackgroundColor: Colors.white12,
-              disabledForegroundColor: Colors.white30,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🪙 ', style: TextStyle(fontSize: 11)),
-                Text(
-                  '$cost',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+
+  static final _tile = BoxDecoration(
+    color: const Color(0xFF2B2D26),
+    border: Border.all(color: Colors.white12),
+    borderRadius: BorderRadius.circular(4),
+  );
+  static IconData _icon(BuildingType type) => switch (type) {
+    BuildingType.watchtower => Icons.fort,
+    BuildingType.frostTower => Icons.ac_unit,
+    BuildingType.cannonTower => Icons.flare,
+    BuildingType.barricade => Icons.fence,
+    _ => Icons.monetization_on,
+  };
+  static String _description(BuildingType type) => switch (type) {
+    BuildingType.watchtower => 'Ataques rápidos contra un objetivo.',
+    BuildingType.frostTower =>
+      'Ralentiza a los enemigos para que otras defensas los alcancen.',
+    BuildingType.cannonTower =>
+      'Disparos explosivos de área. Eficaz contra grupos.',
+    BuildingType.barricade =>
+      'Bloquea el paso. Los enemigos intentan rodearla o destruirla.',
+    _ => 'Produce oro periódicamente. Protégela de los saqueadores.',
+  };
 }

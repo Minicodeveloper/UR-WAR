@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/audio_engine.dart';
 import 'player_class.dart';
 import 'enemy_type.dart';
+import '../graphics/pixel_art_data.dart';
 
 /// Entidad controlada por el jugador con sistema RPG de niveles y habilidades
 class PlayerEntity {
@@ -19,6 +20,14 @@ class PlayerEntity {
   double walkPhase = 0.0;
   bool isMoving = false;
   Offset? targetDestination;
+  Offset aimDirection = const Offset(1, 0);
+  Offset moveDirection = const Offset(1, 0);
+  Offset dashDirection = const Offset(1, 0);
+  double dashCooldown = 0;
+  double dashTimer = 0;
+  double shieldTimer = 0;
+  bool isBlocking = false;
+  bool mageUsesIce = false;
 
   // Sistema de Nivel y Experiencia RPG
   int level = 1;
@@ -36,11 +45,9 @@ class PlayerEntity {
   int score = 0;
   int kills = 0;
 
-  PlayerEntity({
-    required this.position,
-    required this.playerClass,
-  })  : health = playerClass.maxHealth,
-        maxHealth = playerClass.maxHealth {
+  PlayerEntity({required this.position, required this.playerClass})
+    : health = playerClass.maxHealth,
+      maxHealth = playerClass.maxHealth {
     level = 1;
     xp = 0;
     xpToNextLevel = xpRequirementForLevel(1);
@@ -79,6 +86,7 @@ class PlayerEntity {
   }
 
   void takeDamage(double amount) {
+    if (dashTimer > 0 || shieldTimer > 0) return;
     final effectiveDamage = amount * (1.0 - damageReduction).clamp(0.1, 1.0);
     health = max(0, health - effectiveDamage);
     hitFlashTimer = 0.25;
@@ -149,10 +157,18 @@ class EnemyEntity {
   double hitFlashTimer = 0.0;
   double walkPhase = 0.0;
 
+  double slowTimer = 0;
+  double slowFactor = 1;
+  double abilityTimer = 3;
+  int phase = 1;
+  bool rewardGranted = false;
+  bool isWaveEnemy;
+
   EnemyEntity({
     required this.id,
     required this.config,
     required this.position,
+    this.isWaveEnemy = false,
   }) : health = config.maxHealth;
 
   bool get isDead => health <= 0;
@@ -169,6 +185,8 @@ enum BuildingType {
   cottage,
   barricade,
   goldMine,
+  frostTower,
+  cannonTower,
 }
 
 /// Edificio perteneciente a la aldea que debe ser defendido o construido
@@ -192,6 +210,8 @@ class VillageBuildingEntity {
     required this.radius,
   }) : health = maxHealth;
 
+  int get upgradeCost => 75 * level;
+  int get repairCost => ((maxHealth - health) * 0.12).ceil();
   bool get isDead => health <= 0;
 
   void takeDamage(double amount) {
@@ -216,6 +236,9 @@ class ProjectileEntity {
   final double explosionRadius;
   double lifeTime;
   int pierceCount;
+  final Set<String> hitTargetIds = {};
+  final double slowDuration;
+  final double slowFactor;
 
   ProjectileEntity({
     required this.position,
@@ -228,6 +251,8 @@ class ProjectileEntity {
     this.explosionRadius = 0.0,
     this.lifeTime = 2.0,
     this.pierceCount = 1,
+    this.slowDuration = 0,
+    this.slowFactor = 0.5,
   });
 
   bool get isExpired => lifeTime <= 0;
@@ -273,4 +298,95 @@ class ParticleEntity {
 
   double get opacity => max(0.0, min(1.0, lifeTime / maxLifeTime));
   bool get isExpired => lifeTime <= 0;
+}
+
+/// Shared prices and combat values for construction previews and the shop.
+class BuildingSpec {
+  final String name;
+  final int cost;
+  final double maxHealth, radius, damage, range, cooldown;
+  const BuildingSpec(
+    this.name,
+    this.cost,
+    this.maxHealth,
+    this.radius, {
+    this.damage = 0,
+    this.range = 0,
+    this.cooldown = 1,
+  });
+
+  static BuildingSpec forType(BuildingType type) => switch (type) {
+    BuildingType.townHall => const BuildingSpec('Salón comunal', 0, 1200, 50),
+    BuildingType.watchtower => const BuildingSpec(
+      'Torre de flechas',
+      100,
+      500,
+      35,
+      damage: 35,
+      range: 320,
+      cooldown: 0.9,
+    ),
+    BuildingType.frostTower => const BuildingSpec(
+      'Torre de escarcha',
+      160,
+      400,
+      32,
+      damage: 16,
+      range: 300,
+      cooldown: 1.1,
+    ),
+    BuildingType.cannonTower => const BuildingSpec(
+      'Torre de asedio',
+      220,
+      550,
+      36,
+      damage: 65,
+      range: 340,
+      cooldown: 2.2,
+    ),
+    BuildingType.barricade => const BuildingSpec('Barricada', 50, 650, 28),
+    BuildingType.goldMine => const BuildingSpec('Mina de oro', 150, 350, 32),
+    BuildingType.cottage => const BuildingSpec('Cabaña', 80, 350, 35),
+  };
+}
+
+/// A telegraphed attack, trap or persistent sanctuary, shared with the renderer.
+class HazardEntity {
+  final Offset position;
+  final double radius, damage;
+  final Color color;
+  final bool isFriendly;
+  final String type;
+  double delay, duration;
+  final double initialDelay;
+  double tickTimer = 0;
+  bool triggered = false;
+  HazardEntity({
+    required this.position,
+    required this.radius,
+    required this.damage,
+    required this.color,
+    this.isFriendly = false,
+    this.type = 'impact',
+    this.delay = 1.2,
+    this.duration = 0.35,
+  }) : initialDelay = delay;
+  bool get isWarning => delay > 0;
+  bool get isActive => delay <= 0 && duration > 0;
+  double get warningProgress =>
+      initialDelay <= 0 ? 1 : (1 - delay / initialDelay).clamp(0, 1);
+}
+
+class CorpseEntity {
+  final Offset position;
+  final PixelSpriteData sprite;
+  final bool facingLeft;
+  double lifeTime;
+  final double maxLifeTime;
+  CorpseEntity({
+    required this.position,
+    required this.sprite,
+    required this.facingLeft,
+    this.lifeTime = 0.65,
+  }) : maxLifeTime = lifeTime;
 }

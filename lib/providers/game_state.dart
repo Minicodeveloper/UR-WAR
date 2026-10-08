@@ -17,14 +17,33 @@ class GameState extends ChangeNotifier {
 
   void _initializeGame() {
     robots = [
-      Robot(id: 'player_1', name: 'Alpha (Jugador)', x: 1, y: 1, hp: 100, maxHp: 100, attackRange: 1, attackDamage: 35),
-      Robot(id: 'enemy_1', name: 'Omega (Enemigo)', x: 6, y: 6, hp: 100, maxHp: 100, attackRange: 1, attackDamage: 25),
+      Robot(
+        id: 'player_1',
+        name: 'Guardián de acero',
+        x: 1,
+        y: 1,
+        hp: 100,
+        maxHp: 100,
+        attackRange: 1,
+        attackDamage: 35,
+      ),
+      Robot(
+        id: 'enemy_1',
+        name: 'Titán de asedio',
+        x: 6,
+        y: 6,
+        hp: 100,
+        maxHp: 100,
+        attackRange: 1,
+        attackDamage: 25,
+      ),
     ];
     currentTurn = 1;
     selectedRobotId = null;
     isGameOver = false;
     winnerMessage = '';
-    logs = '¡Bienvenido a la Arena Táctica por Turnos! Selecciona a tu Robot Alpha para moverte o atacar.';
+    logs =
+        '¡Bienvenido a la Arena Táctica por Turnos! Selecciona a tu guardián de acero para moverte o atacar.';
     notifyListeners();
   }
 
@@ -35,13 +54,16 @@ class GameState extends ChangeNotifier {
   void onCellTapped(int x, int y) {
     if (isGameOver) return;
 
-    var robotAtCell = robots.where((r) => r.x == x && r.y == y && r.hp > 0).firstOrNull;
+    var robotAtCell = robots
+        .where((r) => r.x == x && r.y == y && r.hp > 0)
+        .firstOrNull;
 
     if (selectedRobotId == null) {
       // Selección de robot del jugador
       if (robotAtCell != null && robotAtCell.id.startsWith('p')) {
         selectedRobotId = robotAtCell.id;
-        logs = 'Robot ${robotAtCell.name} seleccionado. Toca una casilla adyacente para moverte o a un enemigo para atacar.';
+        logs =
+            'Robot ${robotAtCell.name} seleccionado. Toca una casilla adyacente para moverte o a un enemigo para atacar.';
         notifyListeners();
       }
     } else {
@@ -57,7 +79,8 @@ class GameState extends ChangeNotifier {
           selectedRobot.x = x;
           selectedRobot.y = y;
           selectedRobot.actionPoints -= 1;
-          logs = '${selectedRobot.name} se movió a ($x, $y). Puntos de acción restantes: ${selectedRobot.actionPoints}.';
+          logs =
+              '${selectedRobot.name} se movió a ($x, $y). Puntos de acción restantes: ${selectedRobot.actionPoints}.';
 
           if (selectedRobot.actionPoints <= 0) {
             selectedRobotId = null;
@@ -76,7 +99,8 @@ class GameState extends ChangeNotifier {
         if (inRange && selectedRobot.actionPoints > 0) {
           robotAtCell.hp = max(0, robotAtCell.hp - selectedRobot.attackDamage);
           selectedRobot.actionPoints -= 1;
-          logs = '¡${selectedRobot.name} atacó a ${robotAtCell.name} infligiendo ${selectedRobot.attackDamage} de daño! HP enemigo: ${robotAtCell.hp}.';
+          logs =
+              '¡${selectedRobot.name} atacó a ${robotAtCell.name} infligiendo ${selectedRobot.attackDamage} de daño! HP enemigo: ${robotAtCell.hp}.';
 
           if (robotAtCell.hp <= 0) {
             logs = '¡${robotAtCell.name} ha sido destruido! ¡VICTORIA!';
@@ -122,8 +146,12 @@ class GameState extends ChangeNotifier {
   }
 
   void _playEnemyTurn() {
-    var player = robots.where((r) => r.id.startsWith('p') && r.hp > 0).firstOrNull;
-    var enemy = robots.where((r) => r.id.startsWith('e') && r.hp > 0).firstOrNull;
+    var player = robots
+        .where((r) => r.id.startsWith('p') && r.hp > 0)
+        .firstOrNull;
+    var enemy = robots
+        .where((r) => r.id.startsWith('e') && r.hp > 0)
+        .firstOrNull;
 
     if (player == null || enemy == null) return;
 
@@ -138,11 +166,12 @@ class GameState extends ChangeNotifier {
         // Atacar al jugador
         player.hp = max(0, player.hp - enemy.attackDamage);
         enemy.actionPoints--;
-        logs = '¡El enemigo ${enemy.name} te ha atacado causando ${enemy.attackDamage} de daño! Tu HP: ${player.hp}.';
+        logs =
+            '¡El enemigo ${enemy.name} te ha atacado causando ${enemy.attackDamage} de daño! Tu HP: ${player.hp}.';
 
         if (player.hp <= 0) {
           isGameOver = true;
-          winnerMessage = '¡DERROTA! Tu Robot Alpha ha sido destruido.';
+          winnerMessage = '¡DERROTA! Tu guardián de acero ha sido destruido.';
           break;
         }
       } else {
@@ -165,7 +194,9 @@ class GameState extends ChangeNotifier {
   void moveInDirection(int dx, int dy) {
     if (isGameOver) return;
     if (selectedRobotId == null) {
-      final playerRobot = robots.where((r) => r.id.startsWith('p') && r.hp > 0).firstOrNull;
+      final playerRobot = robots
+          .where((r) => r.id.startsWith('p') && r.hp > 0)
+          .firstOrNull;
       if (playerRobot != null) {
         selectedRobotId = playerRobot.id;
       }

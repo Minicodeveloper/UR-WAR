@@ -1,119 +1,154 @@
+import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
-/// Motor de efectos de sonido sintéticos multiplataforma para juegos retro 8-bit.
-/// Funciona en Android, Web, Linux, Windows, macOS e iOS sin dependencias externas.
+/// Bounded voice pool playing original bundled PCM sound effects on every target.
+/// Web playback starts from a user gesture; plugin failures never stop a match.
 class AudioEngine {
-  static bool soundEnabled = true;
-  static bool musicEnabled = true;
+  static bool _soundEnabled = true,
+      _musicEnabled = true,
+      _ready = false,
+      _suspended = false;
+  static double _soundVolume = .7, _musicVolume = .3;
+  static String _track = 'menu';
+  static AudioPlayer? _music;
+  static final List<AudioPlayer> _voices = [];
+  static final List<Future<void>> _voiceQueues = [];
+  static Future<void> _musicQueue = Future.value();
+  static int _voice = 0;
+  static bool _reportedError = false;
+  static final Map<String, DateTime> _lastPlayed = {};
 
-  /// Reproduce sonido sintético de ataque cuerpo a cuerpo (corte de espada)
-  static void playAttackSlash() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 440, durationMs: 40),
-      const ToneNote(freq: 330, durationMs: 40),
-      const ToneNote(freq: 220, durationMs: 50),
-    ]);
+  static bool get soundEnabled => _soundEnabled;
+  static set soundEnabled(bool v) {
+    _soundEnabled = v;
+    if (!v) _stopEffects();
   }
 
-  /// Reproduce sonido de disparo a distancia (flecha/magia)
-  static void playShoot() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 880, durationMs: 30),
-      const ToneNote(freq: 1200, durationMs: 40),
-    ]);
-  }
-
-  /// Reproduce sonido de impacto / daño recibido
-  static void playHit() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 150, durationMs: 40),
-      const ToneNote(freq: 90, durationMs: 60),
-    ]);
-  }
-
-  /// Reproduce sonido de moneda / compra en tienda
-  static void playCoin() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 987, durationMs: 50),  // B5
-      const ToneNote(freq: 1318, durationMs: 120), // E6
-    ]);
-  }
-
-  /// Reproduce sonido de subida de nivel (Fanfarria RPG)
-  static void playLevelUp() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 523, durationMs: 80),  // C5
-      const ToneNote(freq: 659, durationMs: 80),  // E5
-      const ToneNote(freq: 783, durationMs: 80),  // G5
-      const ToneNote(freq: 1046, durationMs: 200), // C6
-    ]);
-  }
-
-  /// Reproduce sonido de habilidad especial / definitiva
-  static void playSpecialSkill() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 300, durationMs: 50),
-      const ToneNote(freq: 600, durationMs: 50),
-      const ToneNote(freq: 900, durationMs: 80),
-      const ToneNote(freq: 1200, durationMs: 150),
-    ]);
-  }
-
-  /// Reproduce sonido de Victoria
-  static void playVictory() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 523, durationMs: 100),
-      const ToneNote(freq: 659, durationMs: 100),
-      const ToneNote(freq: 783, durationMs: 100),
-      const ToneNote(freq: 1046, durationMs: 300),
-    ]);
-  }
-
-  /// Reproduce sonido de Derrota
-  static void playDefeat() {
-    if (!soundEnabled) return;
-    _playToneSequence([
-      const ToneNote(freq: 400, durationMs: 120),
-      const ToneNote(freq: 350, durationMs: 120),
-      const ToneNote(freq: 300, durationMs: 150),
-      const ToneNote(freq: 200, durationMs: 350),
-    ]);
-  }
-
-  static void _playToneSequence(List<ToneNote> notes) {
-    if (kIsWeb) {
-      // Audio sintetizado en Web mediante llamadas ligeras
-      _playWebAudioSynth(notes);
-    } else {
-      // Feedback auditivo/háptico en plataformas nativas
-      debugPrint('[AudioEngine] FX Reproducido: ${notes.length} notas');
+  static bool get musicEnabled => _musicEnabled;
+  static set musicEnabled(bool v) {
+    _musicEnabled = v;
+    if (_ready) {
+      if (v) {
+        startMusic(_track);
+      } else {
+        stopMusic();
+      }
     }
   }
 
-  static void _playWebAudioSynth(List<ToneNote> notes) {
-    try {
-      // Ejecución ligera sin bloquear el main thread
-      double delay = 0;
-      for (final note in notes) {
-        Future.delayed(Duration(milliseconds: delay.round()), () {
-          // Registro de depuración de frecuencia para trazabilidad
-        });
-        delay += note.durationMs;
-      }
-    } catch (_) {}
+  static double get soundVolume => _soundVolume;
+  static set soundVolume(double v) {
+    _soundVolume = v.clamp(0, 1);
   }
-}
 
-class ToneNote {
-  final double freq;
-  final double durationMs;
+  static double get musicVolume => _musicVolume;
+  static set musicVolume(double v) {
+    _musicVolume = v.clamp(0, 1);
+    if (_music != null) _queueMusic(() => _music!.setVolume(_musicVolume));
+  }
 
-  const ToneNote({required this.freq, required this.durationMs});
+  /// Initialization is explicit so model and widget tests need no audio device.
+  static void initialize() {
+    _ready = true;
+  }
+
+  static Future<void> _safe(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (e) {
+      if (!_reportedError) {
+        debugPrint('[AudioEngine] Audio unavailable: $e');
+        _reportedError = true;
+      }
+    }
+  }
+
+  static void _queueMusic(Future<void> Function() action) {
+    _musicQueue = _musicQueue.then((_) => _safe(action));
+  }
+
+  static void startMusic([String track = 'menu']) {
+    _track = track == 'battle' ? 'battle' : 'menu';
+    if (!_ready || !_musicEnabled || _suspended) return;
+    final asset = 'audio/music_$_track.wav';
+    _queueMusic(() async {
+      if (!_musicEnabled || _suspended) return;
+      _music ??= AudioPlayer();
+      await _music!.setReleaseMode(ReleaseMode.loop);
+      await _music!.play(AssetSource(asset), volume: _musicVolume);
+    });
+  }
+
+  static void stopMusic() {
+    if (_music != null) _queueMusic(() => _music!.stop());
+  }
+
+  static void suspend() {
+    _suspended = true;
+    stopMusic();
+    _stopEffects();
+  }
+
+  static void resume() {
+    _suspended = false;
+    startMusic(_track);
+  }
+
+  static void _stopEffects() {
+    for (int i = 0; i < _voices.length; i++) {
+      final player = _voices[i];
+      _voiceQueues[i] = _voiceQueues[i].then((_) => _safe(player.stop));
+    }
+  }
+
+  static void _play(String effect) {
+    if (!_ready || !_soundEnabled || _suspended || _soundVolume == 0) return;
+    final now = DateTime.now();
+    if (now.difference(_lastPlayed[effect] ?? DateTime(2000)).inMilliseconds <
+        65) {
+      return;
+    }
+    _lastPlayed[effect] = now;
+    if (_voices.length < 6) {
+      _voices.add(AudioPlayer());
+      _voiceQueues.add(Future.value());
+    }
+    final index = _voice++ % _voices.length;
+    final player = _voices[index];
+    _voiceQueues[index] = _voiceQueues[index].then(
+      (_) => _safe(() async {
+        if (!_soundEnabled || _suspended) return;
+        await player.stop();
+        await player.play(
+          AssetSource('audio/$effect.wav'),
+          volume: _soundVolume,
+        );
+      }),
+    );
+  }
+
+  static void playAttackSlash() => _play('slash');
+  static void playShoot() => _play('shoot');
+  static void playHit() => _play('hit');
+  static void playCoin() => _play('coin');
+  static void playLevelUp() => _play('levelup');
+  static void playSpecialSkill() => _play('special');
+  static void playVictory() => _play('victory');
+  static void playDefeat() => _play('defeat');
+  static Future<void> dispose() async {
+    _ready = false;
+    await _musicQueue;
+    await Future.wait(_voiceQueues);
+    await _safe(() async {
+      await _music?.dispose();
+      for (final player in _voices) {
+        await player.dispose();
+      }
+    });
+    _music = null;
+    _voices.clear();
+    _voiceQueues.clear();
+    _lastPlayed.clear();
+  }
 }
