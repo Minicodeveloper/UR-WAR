@@ -1,12 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'enemy_type.dart';
+import 'game_map.dart';
 
 class WaveSpawnEntry {
   final EnemyConfig config;
   final double delaySeconds;
-  final int spawnEdge; // 0: Top, 1: Right, 2: Bottom, 3: Left
-
+  final int spawnEdge;
   const WaveSpawnEntry({
     required this.config,
     required this.delaySeconds,
@@ -17,190 +17,103 @@ class WaveSpawnEntry {
 class WaveSystem {
   int currentWave = 1;
   final int maxWaves;
+  final MapBiomeType biome;
+  final int level;
   bool isWaveInProgress = false;
-  double waveTimer = 0.0;
-  double intermissionTimer = 6.0;
+  double waveTimer = 0;
+  double intermissionTimer = 0;
   final List<WaveSpawnEntry> _pendingSpawns = [];
+  final Random _random = Random(42);
   int totalEnemiesInCurrentWave = 0;
   int enemiesSpawnedSoFar = 0;
 
-  WaveSystem({this.maxWaves = 5});
+  WaveSystem({
+    this.maxWaves = 5,
+    this.biome = MapBiomeType.forest,
+    this.level = 1,
+  });
 
-  void startIntermission([double duration = 6.0]) {
+  String get nextWaveSummary {
+    final roster = _roster(currentWave);
+    final counts = <String, int>{};
+    for (final enemy in roster) {
+      counts.update(enemy.name, (n) => n + 1, ifAbsent: () => 1);
+    }
+    return counts.entries.map((e) => '${e.value} ${e.key}').join(' · ');
+  }
+
+  void startIntermission([double duration = 0]) {
     isWaveInProgress = false;
-    intermissionTimer = duration;
+    intermissionTimer = 0; // Preparation ends only when the player is ready.
     _pendingSpawns.clear();
+  }
+
+  List<EnemyConfig> _roster(int wave) {
+    final roster = <EnemyConfig>[];
+    final basic = biome == MapBiomeType.snow
+        ? EnemyConfig.skeleton
+        : EnemyConfig.goblin;
+    roster.addAll(List.generate(5 + wave * 2, (_) => basic));
+    if (wave >= 2) {
+      roster.addAll(List.generate(1 + wave ~/ 2, (_) => EnemyConfig.orc));
+    }
+    if (wave >= 3 && biome != MapBiomeType.snow) {
+      roster.addAll(List.generate(wave ~/ 2, (_) => EnemyConfig.skeleton));
+    }
+    if (wave >= 4 || biome == MapBiomeType.lava) {
+      roster.addAll(
+        List.generate(max(1, wave ~/ 3), (_) => EnemyConfig.necromancer),
+      );
+    }
+    if (wave == maxWaves) {
+      roster.insert(0, EnemyConfig.bossForBiome(biome.name, level));
+    }
+    return roster;
   }
 
   void startWave(int waveNumber, double worldWidth, double worldHeight) {
+    if (waveNumber < 1 || waveNumber > maxWaves) return;
     currentWave = waveNumber;
     isWaveInProgress = true;
-    intermissionTimer = 0.0;
-    waveTimer = 0.0;
+    intermissionTimer = 0;
+    waveTimer = 0;
     _pendingSpawns.clear();
     enemiesSpawnedSoFar = 0;
-
-    final random = Random();
-
-    // Generación dinámica equilibrada de oleadas
-    if (waveNumber == 1) {
-      // Oleada 1: 8 Goblins
-      for (int i = 0; i < 8; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.goblin,
-          delaySeconds: i * 1.5,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-    } else if (waveNumber == 2) {
-      // Oleada 2: 10 Goblins + 4 Esqueletos arqueros
-      for (int i = 0; i < 10; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.goblin,
-          delaySeconds: i * 1.2,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 4; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.skeleton,
-          delaySeconds: 2.0 + i * 2.5,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-    } else if (waveNumber == 3) {
-      // Oleada 3: 12 Goblins + 6 Orcos Berserkers
-      for (int i = 0; i < 12; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.goblin,
-          delaySeconds: i * 1.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 6; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.orc,
-          delaySeconds: 3.0 + i * 2.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-    } else if (waveNumber == 4) {
-      // Oleada 4: 14 Goblins + 6 Orcos + 5 Esqueletos + 2 Nigromantes
-      for (int i = 0; i < 14; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.goblin,
-          delaySeconds: i * 0.9,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 6; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.orc,
-          delaySeconds: 2.0 + i * 2.2,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 5; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.skeleton,
-          delaySeconds: 1.5 + i * 2.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 2; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.necromancer,
-          delaySeconds: 6.0 + i * 5.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-    } else {
-      // Oleada 5 (o superior): ¡JEFE TITÁN! + escolta masiva
-      _pendingSpawns.add(WaveSpawnEntry(
-        config: EnemyConfig.bossTitan,
-        delaySeconds: 3.0,
-        spawnEdge: random.nextInt(4),
-      ));
-      for (int i = 0; i < 16; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.goblin,
-          delaySeconds: i * 0.8,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 8; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.orc,
-          delaySeconds: 2.0 + i * 1.8,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 6; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.skeleton,
-          delaySeconds: 3.0 + i * 2.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
-      for (int i = 0; i < 3; i++) {
-        _pendingSpawns.add(WaveSpawnEntry(
-          config: EnemyConfig.necromancer,
-          delaySeconds: 5.0 + i * 4.0,
-          spawnEdge: random.nextInt(4),
-        ));
-      }
+    final roster = _roster(waveNumber);
+    for (var i = 0; i < roster.length; i++) {
+      _pendingSpawns.add(
+        WaveSpawnEntry(
+          config: roster[i],
+          delaySeconds: i * max(0.55, 1.15 - waveNumber * 0.06),
+          spawnEdge: (waveNumber + i % 2) % 4,
+        ),
+      );
     }
-
-    // Ordenar spawns por tiempo de retraso
-    _pendingSpawns.sort((a, b) => a.delaySeconds.compareTo(b.delaySeconds));
-    totalEnemiesInCurrentWave = _pendingSpawns.length;
+    totalEnemiesInCurrentWave = roster.length;
   }
 
-  /// Retorna los enemigos listos para spawnear en este tick del juego
   List<MapEntry<EnemyConfig, Offset>> update(
     double dt,
     double worldWidth,
     double worldHeight,
   ) {
-    final readySpawns = <MapEntry<EnemyConfig, Offset>>[];
-
-    if (!isWaveInProgress) {
-      intermissionTimer -= dt;
-      if (intermissionTimer <= 0) {
-        startWave(currentWave, worldWidth, worldHeight);
-      }
-      return readySpawns;
-    }
-
+    if (!isWaveInProgress) return [];
     waveTimer += dt;
-    final random = Random();
-
+    final readySpawns = <MapEntry<EnemyConfig, Offset>>[];
     while (_pendingSpawns.isNotEmpty &&
         _pendingSpawns.first.delaySeconds <= waveTimer) {
       final entry = _pendingSpawns.removeAt(0);
       enemiesSpawnedSoFar++;
-
-      Offset spawnPos;
-      const margin = 40.0;
-      switch (entry.spawnEdge) {
-        case 0: // Arriba
-          spawnPos = Offset(margin + random.nextDouble() * (worldWidth - margin * 2), margin);
-          break;
-        case 1: // Derecha
-          spawnPos = Offset(worldWidth - margin, margin + random.nextDouble() * (worldHeight - margin * 2));
-          break;
-        case 2: // Abajo
-          spawnPos = Offset(margin + random.nextDouble() * (worldWidth - margin * 2), worldHeight - margin);
-          break;
-        case 3: // Izquierda
-        default:
-          spawnPos = Offset(margin, margin + random.nextDouble() * (worldHeight - margin * 2));
-          break;
-      }
-
-      readySpawns.add(MapEntry(entry.config, spawnPos));
+      const margin = 55.0;
+      final spread = (_random.nextDouble() - 0.5) * 180;
+      final pos = switch (entry.spawnEdge) {
+        0 => Offset(worldWidth / 2 + spread, margin),
+        1 => Offset(worldWidth - margin, worldHeight / 2 + spread),
+        2 => Offset(worldWidth / 2 + spread, worldHeight - margin),
+        _ => Offset(margin, worldHeight / 2 + spread),
+      };
+      readySpawns.add(MapEntry(entry.config, pos));
     }
-
     return readySpawns;
   }
 

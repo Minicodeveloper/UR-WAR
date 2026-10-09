@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants.dart';
 import 'core/save_system.dart';
+import 'core/audio_engine.dart';
 import 'core/theme.dart';
 import 'providers/game_state.dart';
 import 'screens/main_menu_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SaveSystem.initialize();
+  await SaveSystem.initialize();
+  AudioEngine.initialize();
 
   runApp(
     ChangeNotifierProvider(

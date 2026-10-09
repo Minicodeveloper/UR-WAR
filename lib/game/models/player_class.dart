@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import '../graphics/pixel_art_data.dart';
 
-enum PlayerRoleType {
-  knight,
-  ranger,
-  mage,
-  cleric,
-}
+enum PlayerRoleType { knight, ranger, mage, cleric }
 
 class HeroSkill {
   final String id;
@@ -88,7 +83,7 @@ class PlayerClass {
           'Gira a 360° causando 120 de daño y repeliendo a todos los invasores cercanos.',
       specialSkillCooldownSeconds: 6.0,
       isMelee: true,
-      themeColor: const Color(0xFFE63946),
+      themeColor: const Color(0xFFAB645B),
       spriteIdle: PixelArtLibrary.knightIdle,
       spriteAttack: PixelArtLibrary.knightAttack,
       weaponName: 'Mandoble de Acero',
@@ -113,7 +108,8 @@ class PlayerClass {
         HeroSkill(
           id: 'k_ultimate',
           name: 'Impacto Sísmico',
-          description: 'Definitiva: Terremoto que aturde y daña a todos los enemigos en 200px.',
+          description:
+              'Definitiva: Terremoto que aturde y daña a todos los enemigos en 200px.',
           requiredLevel: 5,
           icon: Icons.electric_bolt_rounded,
           cooldownSeconds: 12.0,
@@ -137,7 +133,7 @@ class PlayerClass {
           'Dispara una ráfaga masiva en abanico de 9 flechas perforantes simultáneas.',
       specialSkillCooldownSeconds: 5.0,
       isMelee: false,
-      themeColor: const Color(0xFF2B9348),
+      themeColor: const Color(0xFF7E9C6F),
       spriteIdle: PixelArtLibrary.rangerIdle,
       spriteAttack: PixelArtLibrary.rangerAttack,
       weaponName: 'Arco Compuesto Élfico',
@@ -162,7 +158,8 @@ class PlayerClass {
         HeroSkill(
           id: 'r_ultimate',
           name: 'Flecha del Dragón',
-          description: 'Definitiva: Proyectil gigante incandescente que atraviesa todo el mapa.',
+          description:
+              'Definitiva: Proyectil gigante incandescente que atraviesa todo el mapa.',
           requiredLevel: 5,
           icon: Icons.local_fire_department_rounded,
           cooldownSeconds: 10.0,
@@ -186,7 +183,7 @@ class PlayerClass {
           'Detona una gigantesca supernova arcana que arrasa a todos los monstruos en un radio de 180px.',
       specialSkillCooldownSeconds: 7.5,
       isMelee: false,
-      themeColor: const Color(0xFF7B2CBF),
+      themeColor: const Color(0xFF9982A7),
       spriteIdle: PixelArtLibrary.mageIdle,
       spriteAttack: PixelArtLibrary.mageIdle,
       weaponName: 'Báculo de Fuego Astral',
@@ -211,7 +208,8 @@ class PlayerClass {
         HeroSkill(
           id: 'm_ultimate',
           name: 'Tormenta de Escarcha',
-          description: 'Definitiva: Congela y ralentiza un 80% a todos los enemigos durante 6s.',
+          description:
+              'Definitiva: Congela y ralentiza un 80% a todos los enemigos durante 6s.',
           requiredLevel: 5,
           icon: Icons.ac_unit_rounded,
           cooldownSeconds: 14.0,
@@ -224,7 +222,7 @@ class PlayerClass {
       name: 'Guardiana Sagrada',
       roleTitle: 'Soporte, Fortificación & Sanación',
       description:
-          'Protectora devota con martillo bendito. Capaz de curar sus propias heridas y reparar el Gran Salón de la Aldea.',
+          'Protectora devota con bastón consagrado. Capaz de curar sus propias heridas y reparar el Gran Salón de la Aldea.',
       maxHealth: 250,
       moveSpeed: 190,
       baseDamage: 40,
@@ -235,7 +233,7 @@ class PlayerClass {
           'Cura 90 HP al héroe y restaura instantáneamente 250 HP a la estructura de la Aldea.',
       specialSkillCooldownSeconds: 9.0,
       isMelee: true,
-      themeColor: const Color(0xFFFFB703),
+      themeColor: const Color(0xFFD4BC80),
       spriteIdle: PixelArtLibrary.clericIdle,
       spriteAttack: PixelArtLibrary.clericIdle,
       weaponName: 'Martillo Rúnico Divino',
@@ -251,7 +249,8 @@ class PlayerClass {
         HeroSkill(
           id: 'c_passive_1',
           name: 'Aura Celestial',
-          description: 'Pasiva: Regenera 5 HP por segundo a todas las torres aliadas.',
+          description:
+              'Pasiva: Regenera 5 HP por segundo a todas las torres aliadas.',
           requiredLevel: 3,
           icon: Icons.wb_sunny_rounded,
           cooldownSeconds: 0.0,
@@ -260,7 +259,8 @@ class PlayerClass {
         HeroSkill(
           id: 'c_ultimate',
           name: 'Escudo Divino',
-          description: 'Definitiva: Otorga invulnerabilidad total a la aldea durante 6 segundos.',
+          description:
+              'Definitiva: Otorga invulnerabilidad total a la aldea durante 6 segundos.',
           requiredLevel: 5,
           icon: Icons.security_rounded,
           cooldownSeconds: 15.0,

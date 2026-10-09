@@ -53,19 +53,22 @@ void main() {
       expect(engine.player.skillPoints, 1);
     });
 
-    test('Building new structures costs gold and adds to village buildings', () {
-      final map = GameMapModel.availableMaps.first;
-      final pClass = PlayerClass.availableClasses.first;
-      final engine = GameEngine(map: map, playerClass: pClass);
+    test(
+      'Building new structures costs gold and adds to village buildings',
+      () {
+        final map = GameMapModel.availableMaps.first;
+        final pClass = PlayerClass.availableClasses.first;
+        final engine = GameEngine(map: map, playerClass: pClass);
 
-      engine.player.gold = 200;
-      final initialBuildingsCount = engine.villageBuildings.length;
+        engine.player.gold = 200;
+        final initialBuildingsCount = engine.villageBuildings.length;
 
-      final built = engine.buildStructure(BuildingType.watchtower, 100);
-      expect(built, isTrue);
-      expect(engine.player.gold, 100);
-      expect(engine.villageBuildings.length, initialBuildingsCount + 1);
-    });
+        final built = engine.buildStructure(BuildingType.watchtower, 100);
+        expect(built, isTrue);
+        expect(engine.player.gold, 100);
+        expect(engine.villageBuildings.length, initialBuildingsCount + 1);
+      },
+    );
   });
 
   group('Tactical Arena Robot Turn Tests', () {
@@ -78,7 +81,9 @@ void main() {
 
     test('Player can select robot, move and end turn cleanly', () {
       final gameState = GameState();
-      final playerRobot = gameState.robots.firstWhere((r) => r.id.startsWith('p'));
+      final playerRobot = gameState.robots.firstWhere(
+        (r) => r.id.startsWith('p'),
+      );
 
       // Select player robot
       gameState.onCellTapped(playerRobot.x, playerRobot.y);
@@ -95,156 +100,164 @@ void main() {
   });
 
   group('Mobile Touch Controls & Responsive HUD Tests', () {
-    testWidgets('VirtualJoystick renders and sends directional input on touch drag', (tester) async {
-      Offset receivedDirection = Offset.zero;
+    testWidgets(
+      'VirtualJoystick renders and sends directional input on touch drag',
+      (tester) async {
+        Offset receivedDirection = Offset.zero;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 300,
-              height: 400,
-              child: VirtualJoystick(
-                radius: 50,
-                onDirectionChanged: (dir) => receivedDirection = dir,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 300,
+                height: 400,
+                child: VirtualJoystick(
+                  radius: 50,
+                  onDirectionChanged: (dir) => receivedDirection = dir,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify that the joystick is visible
-      expect(find.byType(VirtualJoystick), findsOneWidget);
-      expect(find.text('JOYSTICK'), findsOneWidget);
+        // Verify that the joystick is visible
+        expect(find.byType(VirtualJoystick), findsOneWidget);
+        expect(find.text('MOVER'), findsOneWidget);
 
-      // Simulate a drag gesture upwards
-      final joystickCenter = tester.getCenter(find.byType(VirtualJoystick));
-      final gesture = await tester.startGesture(joystickCenter);
-      await gesture.moveBy(const Offset(0, -30));
-      await tester.pump();
+        // Simulate a drag gesture upwards
+        final joystickCenter = tester.getCenter(
+          find
+              .descendant(
+                of: find.byType(VirtualJoystick),
+                matching: find.byType(Listener),
+              )
+              .first,
+        );
+        final gesture = await tester.startGesture(joystickCenter);
+        await gesture.moveBy(const Offset(0, -30));
+        await tester.pump();
 
-      expect(receivedDirection.dy, lessThan(0.0));
+        expect(receivedDirection.dy, lessThan(0.0));
 
-      // End gesture and verify reset to zero
-      await gesture.up();
-      await tester.pump();
-      expect(receivedDirection, Offset.zero);
-    });
+        // End gesture and verify reset to zero
+        await gesture.up();
+        await tester.pump();
+        expect(receivedDirection, Offset.zero);
+      },
+    );
 
-    testWidgets('GameHUD renders cleanly without overflows on small mobile screen (360x640)', (tester) async {
-      final map = GameMapModel.availableMaps.first;
-      final pClass = PlayerClass.availableClasses.first;
-      final engine = GameEngine(map: map, playerClass: pClass);
+    testWidgets(
+      'GameHUD renders cleanly without overflows on small mobile screen (360x640)',
+      (tester) async {
+        final map = GameMapModel.availableMaps.first;
+        final pClass = PlayerClass.availableClasses.first;
+        final engine = GameEngine(map: map, playerClass: pClass);
 
-      tester.view.physicalSize = const Size(360, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GameHUD(
-              engine: engine,
-              onJoystickDirection: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GameHUD(engine: engine, onJoystickDirection: (_) {}),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(GameHUD), findsOneWidget);
-      expect(find.text('Nvl 1 '), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(GameHUD), findsOneWidget);
+        expect(find.text('HÉROE · NIVEL 1'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('GameHUD renders cleanly on compact 320x480 and mobile landscape 800x380', (tester) async {
-      final map = GameMapModel.availableMaps.first;
-      final pClass = PlayerClass.availableClasses.first;
-      final engine = GameEngine(map: map, playerClass: pClass);
+    testWidgets(
+      'GameHUD renders cleanly on compact 320x480 and mobile landscape 800x380',
+      (tester) async {
+        final map = GameMapModel.availableMaps.first;
+        final pClass = PlayerClass.availableClasses.first;
+        final engine = GameEngine(map: map, playerClass: pClass);
 
-      // Test Compact 320x480
-      tester.view.physicalSize = const Size(320, 480);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+        // Test Compact 320x480
+        tester.view.physicalSize = const Size(320, 480);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GameHUD(
-              engine: engine,
-              onJoystickDirection: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GameHUD(engine: engine, onJoystickDirection: (_) {}),
             ),
           ),
-        ),
-      );
-      expect(tester.takeException(), isNull);
+        );
+        expect(tester.takeException(), isNull);
 
-      // Test Landscape 800x380
-      tester.view.physicalSize = const Size(800, 380);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GameHUD(
-              engine: engine,
-              onJoystickDirection: (_) {},
+        // Test Landscape 800x380
+        tester.view.physicalSize = const Size(800, 380);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GameHUD(engine: engine, onJoystickDirection: (_) {}),
             ),
           ),
-        ),
-      );
-      expect(tester.takeException(), isNull);
-    });
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('VillageDefenseScreen renders standalone VirtualJoystick and full-screen touch layer', (tester) async {
-      final map = GameMapModel.availableMaps.first;
-      final pClass = PlayerClass.availableClasses.first;
+    testWidgets(
+      'VillageDefenseScreen renders standalone VirtualJoystick and full-screen touch layer',
+      (tester) async {
+        final map = GameMapModel.availableMaps.first;
+        final pClass = PlayerClass.availableClasses.first;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: VillageDefenseScreen(
-            mapModel: map,
-            playerClass: pClass,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VillageDefenseScreen(mapModel: map, playerClass: pClass),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      // Verificar que tanto GameHUD como el VirtualJoystick independiente están presentes y visibles
-      expect(find.byType(GameHUD), findsOneWidget);
-      expect(find.byType(VirtualJoystick), findsOneWidget);
-      expect(find.text('JOYSTICK'), findsOneWidget);
+        // Verificar que tanto GameHUD como el VirtualJoystick independiente están presentes y visibles
+        expect(find.byType(GameHUD), findsOneWidget);
+        expect(find.byType(VirtualJoystick), findsNWidgets(2));
+        expect(find.text('MOVER'), findsOneWidget);
 
-      // Simular arrastre en pantalla en la zona izquierda del lienzo
-      final gesture = await tester.startGesture(const Offset(150, 300));
-      await gesture.moveBy(const Offset(30, -30));
-      await tester.pump();
-      await gesture.up();
-      await tester.pump();
+        // Simular arrastre en pantalla en la zona izquierda del lienzo
+        final gesture = await tester.startGesture(const Offset(150, 300));
+        await gesture.moveBy(const Offset(30, -30));
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('GameScreen tactical arena supports directional buttons and touch interaction', (tester) async {
-      await tester.pumpWidget(
-        ChangeNotifierProvider(
-          create: (_) => GameState(),
-          child: const MaterialApp(
-            home: GameScreen(),
+    testWidgets(
+      'GameScreen tactical arena supports directional buttons and touch interaction',
+      (tester) async {
+        await tester.pumpWidget(
+          ChangeNotifierProvider(
+            create: (_) => GameState(),
+            child: const MaterialApp(home: GameScreen()),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verificar que los botones direccionales existen
-      expect(find.byIcon(Icons.arrow_left_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_right_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_drop_up_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_drop_down_rounded), findsOneWidget);
+        // Verificar que los botones direccionales existen
+        expect(find.byIcon(Icons.arrow_left_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_right_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_drop_up_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_drop_down_rounded), findsOneWidget);
 
-      // Tocar botón de movimiento a la derecha
-      await tester.tap(find.byIcon(Icons.arrow_right_rounded));
-      await tester.pumpAndSettle();
+        // Tocar botón de movimiento a la derecha
+        await tester.tap(find.byIcon(Icons.arrow_right_rounded));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
