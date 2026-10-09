@@ -5,6 +5,7 @@ import 'character_select_screen.dart';
 import 'credits_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
+import 'tetris_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -94,6 +95,22 @@ class MainMenuScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 16),
+                                    const SizedBox(height: 16),
+
+                  // Tetris con poderes
+                  _MenuButton(
+                    icon: Icons.apps_rounded,
+                    label: 'TETRIS CON PODERES',
+                    subtitle: '20 niveles de velocidad & 4 poderes',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TetrisScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // Ajustes
                   _MenuButton(
